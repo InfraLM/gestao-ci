@@ -26,9 +26,11 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
 }) => {
   const { displayValue, handleChange, handleFocus, handleBlur, value: internalValue } = useCurrencyInput(value);
 
+  const prevInternalRef = React.useRef(internalValue);
   React.useEffect(() => {
-    // Notifica mudanças de valor para o componente pai
-    if (internalValue !== value) {
+    // Notifica mudanças de valor para o componente pai apenas quando o valor interno realmente mudou
+    if (internalValue !== prevInternalRef.current) {
+      prevInternalRef.current = internalValue;
       onChange(internalValue);
     }
   }, [internalValue, onChange]);

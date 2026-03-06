@@ -103,8 +103,9 @@ const RegisterStudent: React.FC = () => {
       }
 
       setSuccess(`Aluno "${formData.nome}" cadastrado com sucesso!`);
-      setFormData(emptyForm);
+      setFormData({ ...emptyForm, data_nascimento: null });
       loadTurmas(); // recarregar vagas
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError('Erro ao cadastrar aluno: ' + (err instanceof Error ? err.message : 'Tente novamente'));
     } finally {

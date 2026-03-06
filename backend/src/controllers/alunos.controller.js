@@ -136,7 +136,23 @@ exports.listarAlunos = async (req, res) => {
     const skip = ((parseInt(page, 10) || 1) - 1) * take;
 
     const [data, total] = await Promise.all([
-      prisma.ci_alunos.findMany({ where, orderBy: { data_cadastro: 'desc' }, skip, take }),
+      prisma.ci_alunos.findMany({
+        where,
+        orderBy: { data_cadastro: 'desc' },
+        skip,
+        take,
+        include: {
+          aluno_turma: {
+            include: { turma: { select: { id: true, tipo: true, data_evento: true } } },
+            orderBy: { data_associacao: 'desc' },
+            take: 1,
+          },
+          financeiro_aluno: {
+            select: { valor_venda: true },
+            take: 1,
+          },
+        },
+      }),
       prisma.ci_alunos.count({ where }),
     ]);
 
@@ -178,7 +194,8 @@ exports.atualizarAluno = async (req, res) => {
     const { id } = req.params;
     const now = getBrazilDate();
 
-    const updateData = { ...req.body, data_atualizacao: new Date(now) };
+    const { turma_id, ...bodyWithoutTurma } = req.body;
+    const updateData = { ...bodyWithoutTurma, data_atualizacao: new Date(now) };
     if (updateData.data_nascimento && typeof updateData.data_nascimento === 'string') {
       updateData.data_nascimento = new Date(updateData.data_nascimento + 'T00:00:00.000Z');
     }

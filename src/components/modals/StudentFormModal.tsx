@@ -65,7 +65,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 endereco: student.address || '',
                 observacoes: student.observations || '',
                 pos_graduacao: (student as any).pos_graduacao || false,
-                valor_venda: (student as any).valor_venda || 0,
+                valor_venda: parseFloat((student as any).valor_venda) || 0,
                 vendedor: (student as any).vendedor || user?.nome || ''
             });
 
@@ -307,7 +307,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                         options={[
                             { value: 'Ativo', label: 'Ativo' },
                             { value: 'Inativo', label: 'Inativo' },
-                            { value: 'Suspenso', label: 'Suspenso' },
+                            { value: 'Cancelado', label: 'Cancelado' },
                         ]}
                     />
                     <CurrencyInput

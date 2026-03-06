@@ -66,8 +66,25 @@ const Students: React.FC = () => {
         return () => clearTimeout(timeout);
     }, [searchTerm]);
 
-    const handleOpenModal = (student: Student | null = null) => {
-        setEditingStudent(student);
+    const handleOpenModal = (student: any = null) => {
+        if (student) {
+            // Map raw backend data to Student interface for the modal
+            const mapped: any = {
+                ...student,
+                name: student.nome,
+                phone: student.telefone,
+                birthDate: student.data_nascimento,
+                address: student.endereco,
+                observations: student.observacoes,
+                status: student.status,
+                valor_venda: parseFloat(student.valor_venda) || 0,
+                vendedor: student.vendedor,
+                pos_graduacao: student.pos_graduacao,
+            };
+            setEditingStudent(mapped);
+        } else {
+            setEditingStudent(null);
+        }
         setIsModalOpen(true);
     };
 
@@ -161,13 +178,19 @@ const Students: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {students.map(student => (
+                                        {students.map((student: any) => {
+                                            const turmaInfo = student.aluno_turma?.[0]?.turma;
+                                            const turmaLabel = turmaInfo
+                                                ? `${turmaInfo.tipo} | ${turmaInfo.data_evento ? new Date(turmaInfo.data_evento).toLocaleDateString('pt-BR') : ''}`
+                                                : '-';
+                                            const temPagamento = student.financeiro_aluno?.length > 0 && parseFloat(student.financeiro_aluno[0]?.valor_venda || '0') > 0;
+                                            return (
                                             <tr key={student.id} className="border-b text-gray-700 hover:bg-gray-50">
-                                                <td className="p-3 font-medium">{student.name}</td>
-                                                <td className="p-3">{student.email}</td>
-                                                <td className="p-3">{student.phone}</td>
-                                                <td className="p-3">{student.course}</td>
-                                                <td className="p-3"><PaymentStatusBadge status={student.paymentStatus!} /></td>
+                                                <td className="p-3 font-medium">{student.nome}</td>
+                                                <td className="p-3">{student.email || '-'}</td>
+                                                <td className="p-3">{student.telefone || '-'}</td>
+                                                <td className="p-3">{turmaLabel}</td>
+                                                <td className="p-3"><PaymentStatusBadge status={temPagamento ? 'Paid' : 'Pending'} /></td>
                                                 <td className="p-3">
                                                     <div className="flex items-center space-x-3">
                                                         <button onClick={() => handleOpenModal(student)} className="text-gray-400 hover:text-blue-500">
@@ -179,7 +202,8 @@ const Students: React.FC = () => {
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))}
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
