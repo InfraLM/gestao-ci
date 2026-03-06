@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && npx prisma generate && cd .. && npx vite build",
+  "buildCommand": "cd backend && npx prisma generate && cd .. && ./node_modules/.bin/vite build",
   "outputDirectory": "dist",
-  "installCommand": "npm install && cd backend && npm install",
+  "installCommand": "npm install --include=dev && cd backend && npm install",
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
