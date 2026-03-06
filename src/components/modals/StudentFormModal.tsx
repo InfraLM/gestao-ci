@@ -46,7 +46,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
         observacoes: '',
         pos_graduacao: false,
         valor_venda: 0,
-        vendedor: ''
+        vendedor: '',
+        forma_pagamento: 'A VISTA',
+        parcelas: 1,
     });
 
     useEffect(() => {
@@ -68,7 +70,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 observacoes: student.observations || '',
                 pos_graduacao: (student as any).pos_graduacao || false,
                 valor_venda: parseFloat((student as any).valor_venda) || 0,
-                vendedor: (student as any).vendedor || user?.nome || ''
+                vendedor: (student as any).vendedor || user?.nome || '',
+                forma_pagamento: (student as any).forma_pagamento || 'A VISTA',
+                parcelas: (student as any).parcelas || 1,
             });
 
             // Buscar turma atual do aluno
@@ -102,7 +106,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 observacoes: '',
                 pos_graduacao: false,
                 valor_venda: 0,
-                vendedor: user?.nome || ''
+                vendedor: user?.nome || '',
+                forma_pagamento: 'A VISTA',
+                parcelas: 1,
             });
             setCurrentTurmaId(null);
             setSelectedTurma('');
@@ -191,7 +197,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 pos_graduacao: formData.pos_graduacao,
                 valor_venda: formData.valor_venda,
                 vendedor: formData.vendedor || null,
-                turma_id: selectedTurma || null
+                turma_id: selectedTurma || null,
+                forma_pagamento: formData.forma_pagamento,
+                parcelas: formData.forma_pagamento === 'PARCELADO' ? formData.parcelas : 1,
             };
 
             let response;
@@ -317,6 +325,28 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                         onChange={(value) => setFormData(prev => ({...prev, valor_venda: value}))}
                         required
                     />
+                    <Select
+                        label="Forma de Pagamento"
+                        value={formData.forma_pagamento}
+                        onChange={(v) => setFormData(prev => ({...prev, forma_pagamento: v, parcelas: v === 'PARCELADO' ? prev.parcelas : 1}))}
+                        options={[
+                            { value: 'A VISTA', label: 'A Vista' },
+                            { value: 'PARCELADO', label: 'Parcelado' },
+                        ]}
+                    />
+                    {formData.forma_pagamento === 'PARCELADO' && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Parcelas</label>
+                            <input
+                                type="number"
+                                min="2"
+                                max="24"
+                                value={formData.parcelas}
+                                onChange={(e) => setFormData(prev => ({...prev, parcelas: parseInt(e.target.value) || 2}))}
+                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-teal focus:border-brand-teal"
+                            />
+                        </div>
+                    )}
                     <div className="flex items-center pt-6">
                         <input
                             type="checkbox"
