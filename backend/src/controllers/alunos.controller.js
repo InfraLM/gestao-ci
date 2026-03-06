@@ -10,7 +10,7 @@ const { recalcTurmaStatus } = require('../utils/turmaStatus');
 // ============================================================================
 exports.criarAluno = async (req, res) => {
   try {
-    const { nome, cpf, email, telefone, data_nascimento, endereco, status, observacoes, vendedor, pos_graduacao, valor_venda, turma_id } = req.body;
+    const { nome, cpf, email, telefone, data_nascimento, endereco, status, observacoes, vendedor, pos_graduacao, valor_venda, turma_id, forma_pagamento, parcelas } = req.body;
 
     if (!nome || !cpf) {
       return res.status(400).json({ error: 'Nome e CPF sao obrigatorios' });
@@ -94,6 +94,8 @@ exports.criarAluno = async (req, res) => {
             aluno_id: id,
             turma_id: turma_id,
             valor_venda: valor_venda ? formatDecimal(valor_venda) : null,
+            forma_pagamento: forma_pagamento || 'A VISTA',
+            parcelas: forma_pagamento === 'PARCELADO' ? (parseInt(parcelas) || 1) : 1,
             data_matricula: new Date(now),
             data_criacao: new Date(now),
             data_atualizacao: new Date(now),
@@ -143,7 +145,7 @@ exports.listarAlunos = async (req, res) => {
         take,
         include: {
           aluno_turma: {
-            include: { turma: { select: { id: true, tipo: true, data_evento: true } } },
+            include: { turma: { select: { id: true, tipo: true, data_evento_inicio: true, data_evento_fim: true } } },
             orderBy: { data_associacao: 'desc' },
             take: 1,
           },
@@ -317,7 +319,7 @@ exports.relatorioAlunos = async (req, res) => {
     const alunos = await prisma.ci_alunos.findMany({
       include: {
         aluno_turma: {
-          include: { turma: { select: { id: true, tipo: true, data_evento: true } } }
+          include: { turma: { select: { id: true, tipo: true, data_evento_inicio: true, data_evento_fim: true } } }
         },
         financeiro_aluno: { select: { valor_venda: true, turma_id: true } }
       },

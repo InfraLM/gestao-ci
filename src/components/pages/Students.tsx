@@ -5,6 +5,7 @@ import ErrorMessage from '../ErrorMessage';
 import { Student } from '../../types';
 import StudentFormModal from '../modals/StudentFormModal';
 import { alunosAPI } from '../../services/api';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 interface AlunoStats {
     total_alunos: number;
@@ -181,7 +182,7 @@ const Students: React.FC = () => {
                                         {students.map((student: any) => {
                                             const turmaInfo = student.aluno_turma?.[0]?.turma;
                                             const turmaLabel = turmaInfo
-                                                ? `${turmaInfo.tipo} | ${turmaInfo.data_evento ? new Date(turmaInfo.data_evento).toLocaleDateString('pt-BR') : ''}`
+                                                ? `${turmaInfo.tipo} | ${formatDateUTC(turmaInfo.data_evento_inicio)} - ${formatDateUTC(turmaInfo.data_evento_fim)}`
                                                 : '-';
                                             const temPagamento = student.financeiro_aluno?.length > 0 && parseFloat(student.financeiro_aluno[0]?.valor_venda || '0') > 0;
                                             return (

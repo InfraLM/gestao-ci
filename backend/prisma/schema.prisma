@@ -35,17 +35,18 @@ model ci_alunos {
 }
 
 model ci_turmas {
-  id               String    @id @db.VarChar(255)
-  tipo             String?   @db.VarChar(255)
-  data_evento      DateTime? @db.Date
-  descricao        String?   @db.VarChar(1000)
-  horario          String?   @db.VarChar(100)
-  local_evento     String?   @db.VarChar(255)
-  capacidade       Int?
-  instrutor        String?   @db.VarChar(255)
-  status           String?   @db.VarChar(50)
-  data_criacao     DateTime? @db.Date
-  data_atualizacao DateTime? @db.Date
+  id                 String    @id @db.VarChar(255)
+  tipo               String?   @db.VarChar(255)
+  data_evento_inicio DateTime? @db.Date
+  descricao          String?   @db.VarChar(1000)
+  horario            String?   @db.VarChar(100)
+  local_evento       String?   @db.VarChar(255)
+  capacidade         Int?
+  instrutor          String?   @db.VarChar(255)
+  status             String?   @db.VarChar(50)
+  data_criacao       DateTime? @db.Date
+  data_atualizacao   DateTime? @db.Date
+  data_evento_fim    DateTime? @db.Date
 
   aluno_turma      ci_aluno_turma[]
   financeiro       ci_financeiro[]
@@ -96,6 +97,8 @@ model ci_financeiro_aluno {
   data_matricula   DateTime? @db.Date
   data_criacao     DateTime? @db.Date
   data_atualizacao DateTime? @db.Date
+  parcelas         Int?
+  forma_pagamento  String?   @db.VarChar
 
   aluno ci_alunos @relation(fields: [aluno_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   turma ci_turmas @relation(fields: [turma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)

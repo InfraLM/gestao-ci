@@ -9,7 +9,7 @@ const { formatDecimal } = require('../utils/formatters');
 // ============================================================================
 exports.matricularAluno = async (req, res) => {
   try {
-    const { aluno_id, turma_id, status, valor_venda } = req.body;
+    const { aluno_id, turma_id, status, valor_venda, forma_pagamento, parcelas } = req.body;
 
     if (!aluno_id || !turma_id) {
       return res.status(400).json({ error: 'aluno_id e turma_id sao obrigatorios' });
@@ -62,6 +62,8 @@ exports.matricularAluno = async (req, res) => {
           aluno_id,
           turma_id,
           valor_venda: valorFinal ? formatDecimal(valorFinal) : null,
+          forma_pagamento: forma_pagamento || 'A VISTA',
+          parcelas: forma_pagamento === 'PARCELADO' ? (parseInt(parcelas) || 1) : 1,
           data_matricula: new Date(dataAtual),
           data_criacao: new Date(dataAtual),
           data_atualizacao: new Date(dataAtual),

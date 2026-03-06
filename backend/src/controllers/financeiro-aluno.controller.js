@@ -62,7 +62,7 @@ exports.listarFinanceiroAluno = async (req, res) => {
         where,
         include: {
           aluno: { select: { nome: true, cpf: true } },
-          turma: { select: { tipo: true, data_evento: true } },
+          turma: { select: { tipo: true, data_evento_inicio: true, data_evento_fim: true } },
         },
         orderBy: { data_criacao: 'desc' },
         skip,
@@ -91,7 +91,7 @@ exports.obterFinanceiroAluno = async (req, res) => {
       where: { id },
       include: {
         aluno: { select: { nome: true, cpf: true } },
-        turma: { select: { tipo: true, data_evento: true } },
+        turma: { select: { tipo: true, data_evento_inicio: true, data_evento_fim: true } },
       },
     });
     if (!record) return res.status(404).json({ error: 'Registro nao encontrado' });
@@ -162,7 +162,7 @@ exports.obterHistoricoAluno = async (req, res) => {
     const rows = await prisma.ci_financeiro_aluno.findMany({
       where: { aluno_id: alunoId },
       include: {
-        turma: { select: { tipo: true, data_evento: true } },
+        turma: { select: { tipo: true, data_evento_inicio: true, data_evento_fim: true } },
       },
       orderBy: { data_criacao: 'desc' }
     });
@@ -183,7 +183,7 @@ exports.obterFinanceiroAlunoPorTurma = async (req, res) => {
     const record = await prisma.ci_financeiro_aluno.findFirst({
       where: { aluno_id: alunoId, turma_id: turmaId },
       include: {
-        turma: { select: { tipo: true, data_evento: true } },
+        turma: { select: { tipo: true, data_evento_inicio: true, data_evento_fim: true } },
       },
     });
     if (!record) return res.status(404).json({ error: 'Registro nao encontrado' });

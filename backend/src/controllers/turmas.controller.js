@@ -2,28 +2,29 @@ const { prisma } = require('../config/prismaClient');
 const { v4: uuidv4 } = require('uuid');
 const { recalcAllTurmaStatuses } = require('../utils/turmaStatus');
 
+// Helper: converte string YYYY-MM-DD para Date UTC
+function toDateUTC(str) {
+  if (!str) return null;
+  return new Date(str + 'T00:00:00.000Z');
+}
+
 // ============================================================================
 // CRIAR TURMA
 // ============================================================================
 exports.criarTurma = async (req, res) => {
   try {
-    const { tipo, data_evento, descricao, horario, local_evento, capacidade, instrutor, status } = req.body;
+    const { tipo, data_evento_inicio, data_evento_fim, descricao, horario, local_evento, capacidade, instrutor, status } = req.body;
 
-    if (!tipo) return res.status(400).json({ error: 'Tipo é obrigatório' });
+    if (!tipo) return res.status(400).json({ error: 'Tipo e obrigatorio' });
 
     const id = uuidv4();
-
-    // Converter data_evento para DateTime se for string
-    let dataEventoFormatted = null;
-    if (data_evento) {
-      dataEventoFormatted = new Date(data_evento + 'T00:00:00.000Z');
-    }
 
     const created = await prisma.ci_turmas.create({
       data: {
         id,
         tipo,
-        data_evento: dataEventoFormatted,
+        data_evento_inicio: toDateUTC(data_evento_inicio),
+        data_evento_fim: toDateUTC(data_evento_fim),
         descricao: descricao || null,
         horario: horario || null,
         local_evento: local_evento || null,
@@ -33,10 +34,10 @@ exports.criarTurma = async (req, res) => {
       }
     });
 
-    console.log('✅ [Turmas] Nova turma criada:', id);
+    console.log('[Turmas] Nova turma criada:', id);
     res.status(201).json(created);
   } catch (error) {
-    console.error('❌ [Turmas Create] Erro:', error.message);
+    console.error('[Turmas Create] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -57,7 +58,7 @@ exports.listarTurmas = async (req, res) => {
     const skip = ((parseInt(page, 10) || 1) - 1) * take;
 
     const [data, total] = await Promise.all([
-      prisma.ci_turmas.findMany({ where, orderBy: { data_evento: 'desc' }, skip, take }),
+      prisma.ci_turmas.findMany({ where, orderBy: { data_evento_inicio: 'desc' }, skip, take }),
       prisma.ci_turmas.count({ where }),
     ]);
 
@@ -71,7 +72,7 @@ exports.listarTurmas = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ [Turmas List] Erro:', error.message);
+    console.error('[Turmas List] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -83,14 +84,14 @@ exports.obterTurma = async (req, res) => {
   try {
     const { id } = req.params;
     const turma = await prisma.ci_turmas.findUnique({ where: { id } });
-    if (!turma) return res.status(404).json({ error: 'Turma não encontrada' });
+    if (!turma) return res.status(404).json({ error: 'Turma nao encontrada' });
 
     const alunosCount = await prisma.ci_aluno_turma.count({ where: { turma_id: id } });
     turma.alunos_inscritos = alunosCount;
 
     res.json(turma);
   } catch (error) {
-    console.error('❌ [Turmas Get] Erro:', error.message);
+    console.error('[Turmas Get] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -103,22 +104,24 @@ exports.atualizarTurma = async (req, res) => {
     const { id } = req.params;
     const updateData = { ...req.body };
 
-    // Converter data_evento para DateTime se for string
-    if (updateData.data_evento && typeof updateData.data_evento === 'string') {
-      updateData.data_evento = new Date(updateData.data_evento + 'T00:00:00.000Z');
+    if (updateData.data_evento_inicio && typeof updateData.data_evento_inicio === 'string') {
+      updateData.data_evento_inicio = toDateUTC(updateData.data_evento_inicio);
+    }
+    if (updateData.data_evento_fim && typeof updateData.data_evento_fim === 'string') {
+      updateData.data_evento_fim = toDateUTC(updateData.data_evento_fim);
     }
 
     try {
       const updated = await prisma.ci_turmas.update({ where: { id }, data: updateData });
-      console.log('✅ [Turmas] Turma atualizada:', id);
+      console.log('[Turmas] Turma atualizada:', id);
       res.json(updated);
     } catch (err) {
-      if (err.code === 'P2025') return res.status(404).json({ error: 'Turma não encontrada' });
-      console.error('❌ [Turmas Update] Erro:', err.message);
+      if (err.code === 'P2025') return res.status(404).json({ error: 'Turma nao encontrada' });
+      console.error('[Turmas Update] Erro:', err.message);
       res.status(500).json({ error: err.message });
     }
   } catch (error) {
-    console.error('❌ [Turmas Update] Erro:', error.message);
+    console.error('[Turmas Update] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -131,21 +134,21 @@ exports.deletarTurma = async (req, res) => {
     const { id } = req.params;
     try {
       const deleted = await prisma.ci_turmas.delete({ where: { id } });
-      console.log('✅ [Turmas] Turma deletada:', id);
+      console.log('[Turmas] Turma deletada:', id);
       res.json({ message: 'Turma deletada com sucesso', deletedTurma: deleted });
     } catch (err) {
-      if (err.code === 'P2025') return res.status(404).json({ error: 'Turma não encontrada' });
-      console.error('❌ [Turmas Delete] Erro:', err.message);
+      if (err.code === 'P2025') return res.status(404).json({ error: 'Turma nao encontrada' });
+      console.error('[Turmas Delete] Erro:', err.message);
       res.status(500).json({ error: err.message });
     }
   } catch (error) {
-    console.error('❌ [Turmas Delete] Erro:', error.message);
+    console.error('[Turmas Delete] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
 
 // ============================================================================
-// ESTATÍSTICAS DE TURMAS
+// ESTATISTICAS DE TURMAS
 // ============================================================================
 exports.estatisticasTurmas = async (req, res) => {
   try {
@@ -169,7 +172,7 @@ exports.estatisticasTurmas = async (req, res) => {
       total_alunos_matriculados: totalAlunos,
     });
   } catch (error) {
-    console.error('❌ [Turmas Stats] Erro:', error.message);
+    console.error('[Turmas Stats] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -180,7 +183,7 @@ exports.estatisticasTurmas = async (req, res) => {
 exports.turmasComResumo = async (req, res) => {
   try {
     const rows = await prisma.ci_turmas.findMany({
-      orderBy: { data_evento: 'desc' },
+      orderBy: { data_evento_inicio: 'desc' },
       include: { _count: { select: { aluno_turma: true } } }
     });
 
@@ -190,18 +193,15 @@ exports.turmasComResumo = async (req, res) => {
       const percentual_ocupacao = Number(((alunos_inscritos / capacidade) * 100).toFixed(2));
       const { _count, ...rest } = r;
 
-      // Mapeamento para compatibilidade com frontend
       return {
         ...rest,
         alunos_inscritos,
         percentual_ocupacao,
-        // Campos adicionais para frontend
         name: rest.tipo,
         instructor: rest.instrutor,
         students: alunos_inscritos,
         capacity: capacidade,
         progress: percentual_ocupacao,
-        date: rest.data_evento ? new Date(rest.data_evento).toLocaleDateString('pt-BR') : null,
         time: rest.horario,
         location: rest.local_evento,
         description: rest.descricao,
@@ -217,7 +217,7 @@ exports.turmasComResumo = async (req, res) => {
 };
 
 // ============================================================================
-// SYNC STATUSES (recalcular status de todas as turmas)
+// SYNC STATUSES
 // ============================================================================
 exports.syncStatuses = async (req, res) => {
   try {
@@ -231,13 +231,13 @@ exports.syncStatuses = async (req, res) => {
 };
 
 // ============================================================================
-// LISTAR TURMAS ABERTAS (para relacionamento com alunos)
+// LISTAR TURMAS ABERTAS
 // ============================================================================
 exports.turmasAbertas = async (req, res) => {
   try {
     const rows = await prisma.ci_turmas.findMany({
       where: { status: 'EM ABERTO' },
-      orderBy: { data_evento: 'asc' },
+      orderBy: { data_evento_inicio: 'asc' },
       include: { _count: { select: { aluno_turma: true } } }
     });
 
@@ -254,10 +254,9 @@ exports.turmasAbertas = async (req, res) => {
       };
     });
 
-    console.log(`✅ [Turmas Abertas] ${result.length} turmas disponíveis`);
     res.json(result);
   } catch (error) {
-    console.error('❌ [Turmas Abertas] Erro:', error.message);
+    console.error('[Turmas Abertas] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };

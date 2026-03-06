@@ -37,7 +37,7 @@ exports.listarOnboarding = async (req, res) => {
             email: true,
             telefone: true,
             aluno_turma: {
-              include: { turma: { select: { id: true, tipo: true, data_evento: true } } }
+              include: { turma: { select: { id: true, tipo: true, data_evento_inicio: true, data_evento_fim: true } } }
             }
           }
         }
@@ -57,7 +57,8 @@ exports.listarOnboarding = async (req, res) => {
       turmas: item.aluno.aluno_turma.map(at => ({
         id: at.turma.id,
         tipo: at.turma.tipo,
-        data_evento: at.turma.data_evento
+        data_evento_inicio: at.turma.data_evento_inicio,
+        data_evento_fim: at.turma.data_evento_fim
       }))
     }));
 

@@ -5,11 +5,13 @@ import DateInput from '../DateInput';
 import Select from '../Select';
 import { useAuth } from '../../context/AuthContext';
 import { alunosAPI, turmasAPI } from '../../services/api';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 interface Turma {
   id: string;
   tipo: string;
-  data_evento?: string;
+  data_evento_inicio?: string;
+  data_evento_fim?: string;
   capacidade: number;
   alunos_inscritos?: number;
   status?: string;
@@ -31,6 +33,8 @@ const RegisterStudent: React.FC = () => {
     valor_venda: 0,
     turma_id: '',
     vendedor: '',
+    forma_pagamento: 'A VISTA',
+    parcelas: 1,
   };
   const [formData, setFormData] = useState(emptyForm);
 
@@ -58,11 +62,10 @@ const RegisterStudent: React.FC = () => {
   };
 
   const formatTurmaLabel = (turma: Turma): string => {
-    const dataFormatada = turma.data_evento
-      ? new Date(turma.data_evento).toLocaleDateString('pt-BR')
-      : 'Sem data';
+    const dataInicio = formatDateUTC(turma.data_evento_inicio);
+    const dataFim = formatDateUTC(turma.data_evento_fim);
     const vagas = turma.capacidade - (turma.alunos_inscritos || 0);
-    return `${turma.tipo} | ${dataFormatada} (${vagas} vagas)`;
+    return `${turma.tipo} | ${dataInicio} - ${dataFim} (${vagas} vagas)`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,6 +96,8 @@ const RegisterStudent: React.FC = () => {
         turma_id: formData.turma_id,
         vendedor: formData.vendedor,
         pos_graduacao: false,
+        forma_pagamento: formData.forma_pagamento,
+        parcelas: formData.forma_pagamento === 'PARCELADO' ? formData.parcelas : 1,
       };
 
       const response = await alunosAPI.criar(dataToSubmit);
@@ -201,6 +206,30 @@ const RegisterStudent: React.FC = () => {
             onChange={(value) => setFormData(prev => ({ ...prev, valor_venda: value }))}
             required
           />
+
+          <Select
+            label="Forma de Pagamento *"
+            value={formData.forma_pagamento}
+            onChange={(v) => setFormData(prev => ({ ...prev, forma_pagamento: v, parcelas: v === 'PARCELADO' ? prev.parcelas : 1 }))}
+            options={[
+              { value: 'A VISTA', label: 'A Vista' },
+              { value: 'PARCELADO', label: 'Parcelado' },
+            ]}
+          />
+
+          {formData.forma_pagamento === 'PARCELADO' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Parcelas *</label>
+              <input
+                type="number"
+                min="2"
+                max="24"
+                value={formData.parcelas}
+                onChange={(e) => setFormData(prev => ({ ...prev, parcelas: parseInt(e.target.value) || 2 }))}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-colors"
+              />
+            </div>
+          )}
 
           <div className="md:col-span-2">
             <Select

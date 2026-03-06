@@ -4,11 +4,13 @@ import CurrencyInput from '../CurrencyInput';
 import DateInput from '../DateInput';
 import Select from '../Select';
 import { financeiroAPI, turmasAPI } from '../../services/api';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 interface Turma {
     id: string;
     tipo: string;
-    data_evento?: string | null;
+    data_evento_inicio?: string | null;
+    data_evento_fim?: string | null;
     status?: string;
 }
 
@@ -123,7 +125,7 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOpen, onC
                             onChange={(v) => setFormData(prev => ({ ...prev, turma_id: v }))}
                             options={turmas.map(t => ({
                                 value: t.id,
-                                label: `${t.tipo} | ${t.data_evento ? new Date(t.data_evento).toLocaleDateString('pt-BR') : 'Sem data'}`
+                                label: `${t.tipo} | ${formatDateUTC(t.data_evento_inicio)} - ${formatDateUTC(t.data_evento_fim)}`
                             }))}
                             placeholder="Selecione a turma..."
                         />

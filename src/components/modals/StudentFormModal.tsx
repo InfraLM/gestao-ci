@@ -7,6 +7,7 @@ import Select from '../Select';
 import { useAuth } from '../../context/AuthContext';
 import { alunosAPI, matriculasAPI, turmasAPI, financeiroAlunoAPI } from '../../services/api';
 import { Student } from '../../types';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 interface StudentFormModalProps {
     isOpen: boolean;
@@ -19,7 +20,8 @@ interface Turma {
     id: string;
     tipo: string;
     nome?: string;
-    data_evento?: string;
+    data_evento_inicio?: string;
+    data_evento_fim?: string;
     capacidade: number;
     students?: number;
     alunos_inscritos?: number;
@@ -154,10 +156,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
     };
 
     const formatTurmaDisplay = (turma: Turma): string => {
-        const dataFormatada = turma.data_evento
-            ? new Date(turma.data_evento).toLocaleDateString('pt-BR')
-            : 'Sem data';
-        return `${turma.tipo} | ${dataFormatada}`;
+        const dataInicio = formatDateUTC(turma.data_evento_inicio);
+        const dataFim = formatDateUTC(turma.data_evento_fim);
+        return `${turma.tipo} | ${dataInicio} - ${dataFim}`;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

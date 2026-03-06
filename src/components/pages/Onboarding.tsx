@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ErrorMessage from '../ErrorMessage';
 import Select from '../Select';
 import { onboardingAPI, turmasAPI } from '../../services/api';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 const ETAPAS = ['Boas-vindas', 'Envio do Livro', 'Grupo da Turma', 'Concluído', 'Feedback'];
 
@@ -13,13 +14,14 @@ interface OnboardingRecord {
   nome: string;
   email?: string;
   telefone?: string;
-  turmas?: { id: string; tipo: string; data_evento?: string }[];
+  turmas?: { id: string; tipo: string; data_evento_inicio?: string; data_evento_fim?: string }[];
 }
 
 interface Turma {
   id: string;
   tipo: string;
-  data_evento?: string;
+  data_evento_inicio?: string;
+  data_evento_fim?: string;
 }
 
 // ============================================================================
@@ -219,7 +221,7 @@ const Onboarding: React.FC = () => {
             onChange={setFilterTurma}
             options={turmas.map(t => ({
               value: t.id,
-              label: `${t.tipo}${t.data_evento ? ` | ${new Date(t.data_evento).toLocaleDateString('pt-BR')}` : ''}`
+              label: `${t.tipo}${t.data_evento_inicio ? ` | ${formatDateUTC(t.data_evento_inicio)} - ${formatDateUTC(t.data_evento_fim)}` : ''}`
             }))}
             placeholder="Todas as turmas"
           />

@@ -17,7 +17,8 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSucc
     const [formData, setFormData] = useState({
         tipo: '',
         instrutor: '',
-        data_evento: null as Date | null,
+        data_evento_inicio: null as Date | null,
+        data_evento_fim: null as Date | null,
         horario: '08:00 - 18:00',
         local_evento: '',
         capacidade: '',
@@ -53,8 +54,14 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSucc
                 return;
             }
 
-            if (!formData.data_evento) {
-                setError('Data do evento e obrigatoria');
+            if (!formData.data_evento_inicio) {
+                setError('Data de inicio e obrigatoria');
+                setLoading(false);
+                return;
+            }
+
+            if (!formData.data_evento_fim) {
+                setError('Data de fim e obrigatoria');
                 setLoading(false);
                 return;
             }
@@ -68,7 +75,8 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSucc
             const dataToSubmit = {
                 tipo: formData.tipo,
                 instrutor: formData.instrutor,
-                data_evento: formatDateForAPI(formData.data_evento),
+                data_evento_inicio: formatDateForAPI(formData.data_evento_inicio),
+                data_evento_fim: formatDateForAPI(formData.data_evento_fim),
                 horario: formData.horario,
                 local_evento: formData.local_evento,
                 capacidade: parseInt(formData.capacidade),
@@ -87,7 +95,8 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSucc
             setFormData({
                 tipo: '',
                 instrutor: '',
-                data_evento: null,
+                data_evento_inicio: null,
+                data_evento_fim: null,
                 horario: '08:00 - 18:00',
                 local_evento: '',
                 capacidade: '',
@@ -147,9 +156,14 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSucc
                         />
                     </div>
                     <DateInput
-                        label="Data do Evento"
-                        value={formData.data_evento}
-                        onChange={(date) => setFormData(prev => ({ ...prev, data_evento: date }))}
+                        label="Data Inicio *"
+                        value={formData.data_evento_inicio}
+                        onChange={(date) => setFormData(prev => ({ ...prev, data_evento_inicio: date }))}
+                    />
+                    <DateInput
+                        label="Data Fim *"
+                        value={formData.data_evento_fim}
+                        onChange={(date) => setFormData(prev => ({ ...prev, data_evento_fim: date }))}
                     />
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Horario</label>

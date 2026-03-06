@@ -33,7 +33,8 @@ const ClassDetailsModal: React.FC<ClassDetailsModalProps> = ({
   const [formData, setFormData] = useState({
     tipo: '',
     instrutor: '',
-    data_evento: null as Date | null,
+    data_evento_inicio: null as Date | null,
+    data_evento_fim: null as Date | null,
     horario: '',
     local_evento: '',
     capacidade: 0,
@@ -68,7 +69,8 @@ const ClassDetailsModal: React.FC<ClassDetailsModalProps> = ({
       setFormData({
         tipo: turmaData.tipo || '',
         instrutor: turmaData.instrutor || '',
-        data_evento: turmaData.data_evento ? new Date(turmaData.data_evento) : null,
+        data_evento_inicio: turmaData.data_evento_inicio ? new Date(turmaData.data_evento_inicio) : null,
+        data_evento_fim: turmaData.data_evento_fim ? new Date(turmaData.data_evento_fim) : null,
         horario: turmaData.horario || '',
         local_evento: turmaData.local_evento || '',
         capacidade: turmaData.capacidade || 0,
@@ -103,7 +105,8 @@ const ClassDetailsModal: React.FC<ClassDetailsModalProps> = ({
     try {
       const dataToSubmit = {
         ...formData,
-        data_evento: formData.data_evento?.toISOString().split('T')[0]
+        data_evento_inicio: formData.data_evento_inicio?.toISOString().split('T')[0],
+        data_evento_fim: formData.data_evento_fim?.toISOString().split('T')[0]
       };
 
       await turmasAPI.atualizar(classId, dataToSubmit);
@@ -354,8 +357,12 @@ const DadosTab: React.FC<any> = ({
         <DataField label="Tipo" value={formData.tipo} />
         <DataField label="Instrutor" value={formData.instrutor} />
         <DataField
-          label="Data do Evento"
-          value={formData.data_evento?.toLocaleDateString('pt-BR')}
+          label="Data Inicio"
+          value={formData.data_evento_inicio?.toLocaleDateString('pt-BR')}
+        />
+        <DataField
+          label="Data Fim"
+          value={formData.data_evento_fim?.toLocaleDateString('pt-BR')}
         />
         <DataField label="Horario" value={formData.horario} />
         <DataField label="Local" value={formData.local_evento} />
@@ -403,9 +410,15 @@ const DadosTab: React.FC<any> = ({
       </div>
 
       <DateInput
-        label="Data do Evento"
-        value={formData.data_evento}
-        onChange={(date) => setFormData({ ...formData, data_evento: date })}
+        label="Data Inicio"
+        value={formData.data_evento_inicio}
+        onChange={(date) => setFormData({ ...formData, data_evento_inicio: date })}
+      />
+
+      <DateInput
+        label="Data Fim"
+        value={formData.data_evento_fim}
+        onChange={(date) => setFormData({ ...formData, data_evento_fim: date })}
       />
 
       <div>

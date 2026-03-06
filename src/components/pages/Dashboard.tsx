@@ -4,6 +4,7 @@ import StatCard from '../StatCard';
 import ErrorMessage from '../ErrorMessage';
 import { alunosAPI, turmasAPI, financeiroAPI } from '../../services/api';
 import { formatCurrency } from '../../hooks/useCurrencyInput';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 interface AlunoStats {
     total_alunos: number;
@@ -25,7 +26,8 @@ interface FinanceiroStats {
 interface TurmaResumo {
     id: string;
     tipo: string;
-    data_evento: string | null;
+    data_evento_inicio: string | null;
+    data_evento_fim: string | null;
     status: string;
     capacidade: number;
     alunos_inscritos: number;
@@ -140,7 +142,7 @@ const Dashboard: React.FC = () => {
                                 {turmasAtivas.slice(0, 8).map(turma => (
                                     <tr key={turma.id} className="border-b text-gray-700">
                                         <td className="py-4 font-medium">{turma.tipo}</td>
-                                        <td className="py-4">{turma.data_evento ? new Date(turma.data_evento).toLocaleDateString('pt-BR') : '-'}</td>
+                                        <td className="py-4">{turma.data_evento_inicio ? `${formatDateUTC(turma.data_evento_inicio)} - ${formatDateUTC(turma.data_evento_fim)}` : '-'}</td>
                                         <td className="py-4">{turma.alunos_inscritos}/{turma.capacidade}</td>
                                         <td className="py-4">
                                             <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusColor[turma.status] || 'bg-gray-100 text-gray-800'}`}>

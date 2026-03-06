@@ -233,8 +233,8 @@ exports.resumoCompleto = async (req, res) => {
       end.setMonth(end.getMonth() + 1);
 
       if (tipo_data === 'evento') {
-        // Filtrar por data_evento da turma
-        turmaDateFilter = { data_evento: { gte: start, lt: end } };
+        // Filtrar por data_evento_inicio da turma
+        turmaDateFilter = { data_evento_inicio: { gte: start, lt: end } };
       } else {
         // Filtrar por data da movimentacao/matricula
         dateFilterDespesas = { data_movimentacao: { gte: start, lt: end } };
@@ -327,7 +327,7 @@ exports.resumoCompleto = async (req, res) => {
     const turmasInfo = allTurmaIds.length > 0
       ? await prisma.ci_turmas.findMany({
           where: { id: { in: allTurmaIds } },
-          select: { id: true, tipo: true, data_evento: true, status: true }
+          select: { id: true, tipo: true, data_evento_inicio: true, data_evento_fim: true, status: true }
         })
       : [];
 
@@ -339,7 +339,8 @@ exports.resumoCompleto = async (req, res) => {
         ...item,
         saldo: formatDecimal(item.receitas - item.despesas),
         turma_tipo: info?.tipo || 'Desconhecida',
-        data_evento: info?.data_evento || null,
+        data_evento_inicio: info?.data_evento_inicio || null,
+        data_evento_fim: info?.data_evento_fim || null,
         turma_status: info?.status || null,
       };
     }).sort((a, b) => b.saldo - a.saldo);

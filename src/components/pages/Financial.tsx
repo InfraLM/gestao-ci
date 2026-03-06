@@ -5,6 +5,7 @@ import Select from '../Select';
 import TransactionFormModal from '../modals/TransactionFormModal';
 import { formatCurrency } from '../../hooks/useCurrencyInput';
 import { financeiroAPI, financeiroAlunoAPI, turmasAPI } from '../../services/api';
+import { formatDateUTC } from '../../utils/dateUtils';
 
 type TabType = 'visao-geral' | 'gastos' | 'receitas' | 'por-turma';
 
@@ -30,7 +31,8 @@ interface Receita {
 interface TurmaResumo {
     turma_id: string;
     turma_tipo: string;
-    data_evento: string | null;
+    data_evento_inicio: string | null;
+    data_evento_fim: string | null;
     turma_status: string | null;
     receitas: number;
     despesas: number;
@@ -49,7 +51,8 @@ interface ResumoCompleto {
 interface TurmaGastos {
     turma_id: string;
     turma_tipo: string;
-    turma_data_evento: string | null;
+    turma_data_evento_inicio: string | null;
+    turma_data_evento_fim: string | null;
     total_gastos: number;
     total_receitas: number;
     saldo: number;
@@ -129,10 +132,10 @@ const Financial: React.FC = () => {
 
         const result: TurmaGastos[] = [];
         for (const turmaId of allTurmaIds) {
-            let turmaInfo = { tipo: 'Turma', data_evento: null as string | null };
+            let turmaInfo = { tipo: 'Turma', data_evento_inicio: null as string | null, data_evento_fim: null as string | null };
             try {
                 const t = await turmasAPI.obter(turmaId);
-                turmaInfo = { tipo: t.tipo, data_evento: t.data_evento };
+                turmaInfo = { tipo: t.tipo, data_evento_inicio: t.data_evento_inicio, data_evento_fim: t.data_evento_fim };
             } catch { /* ignorar */ }
 
             const turmaGastos = gastosMap.get(turmaId) || [];
@@ -143,7 +146,8 @@ const Financial: React.FC = () => {
             result.push({
                 turma_id: turmaId,
                 turma_tipo: turmaInfo.tipo,
-                turma_data_evento: turmaInfo.data_evento,
+                turma_data_evento_inicio: turmaInfo.data_evento_inicio,
+                turma_data_evento_fim: turmaInfo.data_evento_fim,
                 total_gastos: totalGastos,
                 total_receitas: totalReceitas,
                 saldo: totalReceitas - totalGastos,
@@ -324,7 +328,7 @@ const VisaoGeral: React.FC<{ turmas: TurmaResumo[] }> = ({ turmas }) => {
                     {turmas.map(t => (
                         <tr key={t.turma_id} className="border-b text-gray-700 hover:bg-gray-50">
                             <td className="p-3 font-medium">{t.turma_tipo}</td>
-                            <td className="p-3 text-sm">{t.data_evento ? new Date(t.data_evento).toLocaleDateString('pt-BR') : '-'}</td>
+                            <td className="p-3 text-sm">{t.data_evento_inicio ? `${formatDateUTC(t.data_evento_inicio)} - ${formatDateUTC(t.data_evento_fim)}` : '-'}</td>
                             <td className="p-3 text-center">{t.qtd_alunos}</td>
                             <td className="p-3 text-right font-semibold text-green-600">{formatCurrency(t.receitas)}</td>
                             <td className="p-3 text-right font-semibold text-red-600">{formatCurrency(t.despesas)}</td>
@@ -494,8 +498,8 @@ const PorTurma: React.FC<{
                             <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900">{turma.turma_tipo}</h3>
                                 <p className="text-sm text-gray-500">
-                                    {turma.turma_data_evento
-                                        ? new Date(turma.turma_data_evento).toLocaleDateString('pt-BR')
+                                    {turma.turma_data_evento_inicio
+                                        ? `${formatDateUTC(turma.turma_data_evento_inicio)} - ${formatDateUTC(turma.turma_data_evento_fim)}`
                                         : 'Sem data'
                                     } - {turma.receitas_turma.length} {turma.receitas_turma.length === 1 ? 'entrada' : 'entradas'}, {turma.gastos.length} {turma.gastos.length === 1 ? 'saida' : 'saidas'}
                                 </p>

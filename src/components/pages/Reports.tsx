@@ -8,7 +8,8 @@ import { formatCurrency } from '../../hooks/useCurrencyInput';
 interface TurmaResumo {
     id: string;
     tipo: string;
-    data_evento: string | null;
+    data_evento_inicio: string | null;
+    data_evento_fim: string | null;
     status: string;
     capacidade: number;
     alunos_inscritos: number;
