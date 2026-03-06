@@ -226,7 +226,7 @@ const Reports: React.FC = () => {
                         {financialData.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sem dados financeiros</div>
                         ) : (
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={financialData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -248,7 +248,7 @@ const Reports: React.FC = () => {
                         {saldoData.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sem dados</div>
                         ) : (
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={saldoData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -272,7 +272,7 @@ const Reports: React.FC = () => {
                         {vendedorData.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sem dados de vendedores</div>
                         ) : (
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={vendedorData} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" />
@@ -293,7 +293,7 @@ const Reports: React.FC = () => {
                         {vendedorData.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sem dados</div>
                         ) : (
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={vendedorData} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" />
@@ -382,7 +382,7 @@ const Reports: React.FC = () => {
                         {studentsByClassData.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sem dados de turmas</div>
                         ) : (
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={studentsByClassData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" />
@@ -402,7 +402,7 @@ const Reports: React.FC = () => {
                         {occupancyData.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sem dados de turmas</div>
                         ) : (
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={occupancyData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
@@ -501,7 +501,7 @@ const Reports: React.FC = () => {
                         {evolucaoData.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sem dados de cadastros</div>
                         ) : (
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={evolucaoData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />

@@ -1,11 +1,13 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["lovable", "public"]
 }
 
 model ci_alunos {
@@ -29,6 +31,7 @@ model ci_alunos {
   onboarding       ci_onboarding[]
 
   @@map("ci_alunos")
+  @@schema("lovable")
 }
 
 model ci_turmas {
@@ -49,6 +52,7 @@ model ci_turmas {
   financeiro_aluno ci_financeiro_aluno[]
 
   @@map("ci_turmas")
+  @@schema("lovable")
 }
 
 model ci_aluno_turma {
@@ -64,6 +68,7 @@ model ci_aluno_turma {
 
   @@unique([aluno_id, turma_id], name: "uq_aluno_turma")
   @@map("ci_aluno_turma")
+  @@schema("lovable")
 }
 
 model ci_financeiro {
@@ -80,6 +85,7 @@ model ci_financeiro {
   turma ci_turmas @relation(fields: [turma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("ci_financeiro")
+  @@schema("lovable")
 }
 
 model ci_financeiro_aluno {
@@ -96,6 +102,7 @@ model ci_financeiro_aluno {
 
   @@unique([aluno_id, turma_id], name: "uq_fin_aluno_turma")
   @@map("ci_financeiro_aluno")
+  @@schema("lovable")
 }
 
 model ci_onboarding {
@@ -107,6 +114,7 @@ model ci_onboarding {
   aluno ci_alunos @relation(fields: [aluno_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("ci_onboarding")
+  @@schema("lovable")
 }
 
 model ci_formulario {
@@ -124,6 +132,7 @@ model ci_formulario {
   comentarios           String?   @db.VarChar(1000)
 
   @@map("ci_formulario")
+  @@schema("lovable")
 }
 
 model apps_usuarios {
@@ -142,4 +151,5 @@ model apps_usuarios {
   reuniao      Boolean?
 
   @@map("apps_usuarios")
+  @@schema("lovable")
 }
