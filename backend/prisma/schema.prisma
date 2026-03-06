@@ -118,18 +118,17 @@ model ci_onboarding {
 }
 
 model ci_formulario {
-  id                    String    @id @db.VarChar(255)
-  data_resposta         DateTime? @db.Date
-  horario_resposta      String?   @db.VarChar(20)
-  nps                   Int?
-  avaliacao_organizacao String?   @db.VarChar(50)
-  avaliacao_leia        String?   @db.VarChar(50)
-  avaliacao_valter      String?   @db.VarChar(50)
-  avaliacao_apoio       String?   @db.VarChar(50)
-  avaliacao_geral       String?   @db.VarChar(50)
-  o_que_melhorar        String?   @db.VarChar(1000)
-  o_que_mais_gostou     String?   @db.VarChar(1000)
-  comentarios           String?   @db.VarChar(1000)
+  id                    String   @id @db.VarChar(255)
+  data_resposta         DateTime @db.Date
+  horario_resposta      String   @db.VarChar(10)
+  nps                   Int
+  avaliacao_organizacao String   @db.VarChar(20)
+  avaliacao_instrutor   String   @db.VarChar(20)
+  avaliacao_apoio       String   @db.VarChar(20)
+  avaliacao_geral       String   @db.VarChar(20)
+  o_que_melhorar        String?  @db.VarChar(2000)
+  o_que_mais_gostou     String   @db.VarChar(2000)
+  comentarios           String?  @db.VarChar(2000)
 
   @@map("ci_formulario")
   @@schema("lovable")

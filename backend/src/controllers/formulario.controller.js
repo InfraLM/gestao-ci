@@ -92,8 +92,7 @@ exports.resultados = async (req, res) => {
     // Avaliacoes distribution
     const campos = [
       'avaliacao_organizacao',
-      'avaliacao_leia',
-      'avaliacao_valter',
+      'avaliacao_instrutor',
       'avaliacao_apoio',
       'avaliacao_geral',
     ];

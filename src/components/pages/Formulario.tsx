@@ -6,16 +6,15 @@ type SubTab = 'respostas' | 'resultados';
 
 interface Resposta {
   id: string;
-  data_resposta: string | null;
-  horario_resposta: string | null;
-  nps: number | null;
-  avaliacao_organizacao: string | null;
-  avaliacao_leia: string | null;
-  avaliacao_valter: string | null;
-  avaliacao_apoio: string | null;
-  avaliacao_geral: string | null;
+  data_resposta: string;
+  horario_resposta: string;
+  nps: number;
+  avaliacao_organizacao: string;
+  avaliacao_instrutor: string;
+  avaliacao_apoio: string;
+  avaliacao_geral: string;
   o_que_melhorar: string | null;
-  o_que_mais_gostou: string | null;
+  o_que_mais_gostou: string;
   comentarios: string | null;
 }
 
@@ -34,8 +33,7 @@ interface Resultados {
 
 const avaliacaoLabels: Record<string, string> = {
   avaliacao_organizacao: 'Organizacao',
-  avaliacao_leia: 'Leia',
-  avaliacao_valter: 'Valter',
+  avaliacao_instrutor: 'Instrutor',
   avaliacao_apoio: 'Apoio',
   avaliacao_geral: 'Geral',
 };
