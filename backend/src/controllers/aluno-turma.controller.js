@@ -1,7 +1,8 @@
-const { pool, query } = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+const { prisma } = require('../config/prismaClient');
 const { getBrazilDate } = require('../utils/dateBrazil');
+const { getNextId } = require('../utils/sequentialId');
 const { recalcTurmaStatus } = require('../utils/turmaStatus');
+const { formatDecimal } = require('../utils/formatters');
 
 // ============================================================================
 // MATRICULAR ALUNO EM TURMA
@@ -15,94 +16,73 @@ exports.matricularAluno = async (req, res) => {
     }
 
     // Verificar capacidade da turma
-    const turmaResult = await query(
-      'SELECT capacidade FROM lovable.ci_turmas WHERE id = $1',
-      [turma_id]
-    );
-
-    if (turmaResult.rows.length === 0) {
+    const turma = await prisma.ci_turmas.findUnique({ where: { id: turma_id } });
+    if (!turma) {
       return res.status(400).json({ error: 'Turma nao encontrada' });
     }
 
-    const capacidade = turmaResult.rows[0].capacidade;
-
-    // Contar alunos ja matriculados na turma
-    const countResult = await query(
-      'SELECT COUNT(*) as total FROM lovable.ci_aluno_turma WHERE turma_id = $1',
-      [turma_id]
-    );
-
-    const alunosCont = parseInt(countResult.rows[0].total);
-
-    if (alunosCont >= capacidade) {
+    const alunosCont = await prisma.ci_aluno_turma.count({ where: { turma_id } });
+    if (alunosCont >= turma.capacidade) {
       return res.status(409).json({
-        error: `A turma esta cheia! (${alunosCont}/${capacidade} vagas)`,
+        error: `A turma esta cheia! (${alunosCont}/${turma.capacidade} vagas)`,
         alunosCont,
-        capacidade,
+        capacidade: turma.capacidade,
         full: true
       });
     }
 
-    // Gerar ID sequencial para aluno_turma
-    const idResult = await query(
-      'SELECT COALESCE(MAX(CAST(id_indice AS INTEGER)), 0) + 1 as next_id FROM lovable.ci_aluno_turma'
-    );
-    const id_indice = String(idResult.rows[0].next_id);
+    // Gerar ID sequencial e criar associacao
+    const id_indice = await getNextId('ci_aluno_turma', 'id_indice');
     const dataAtual = getBrazilDate();
 
-    const result = await query(
-      `INSERT INTO lovable.ci_aluno_turma (
-        id_indice, aluno_id, turma_id, data_associacao, status,
-        data_atualizacao
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *`,
-      [
-        id_indice, aluno_id, turma_id, dataAtual, status || 'inscrito',
-        dataAtual
-      ]
-    );
+    const created = await prisma.ci_aluno_turma.create({
+      data: {
+        id_indice,
+        aluno_id,
+        turma_id,
+        status: status || 'inscrito',
+        data_associacao: new Date(dataAtual),
+        data_atualizacao: new Date(dataAtual),
+      }
+    });
 
     // Criar ci_financeiro_aluno (receita) automaticamente
     try {
-      // Gerar ID sequencial para financeiro_aluno
-      const finIdResult = await query(
-        'SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) + 1 as next_id FROM lovable.ci_financeiro_aluno'
-      );
-      const finAlunoId = String(finIdResult.rows[0].next_id);
-      // Buscar valor_venda do aluno
-      const alunoResult = await query(
-        'SELECT valor_venda FROM lovable.ci_alunos WHERE id = $1',
-        [aluno_id]
-      );
-      const alunoValorVenda = alunoResult.rows.length > 0 ? alunoResult.rows[0].valor_venda : (valor_venda || null);
+      const finAlunoId = await getNextId('ci_financeiro_aluno', 'id');
+      // Buscar valor_venda do aluno se nao foi informado
+      let valorFinal = valor_venda;
+      if (!valorFinal) {
+        const aluno = await prisma.ci_alunos.findUnique({ where: { id: aluno_id }, select: { valor_venda: true } });
+        valorFinal = aluno?.valor_venda;
+      }
 
-      await query(
-        `INSERT INTO lovable.ci_financeiro_aluno (
-          id, aluno_id, turma_id, valor_venda, data_matricula,
-          data_criacao, data_atualizacao
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (aluno_id, turma_id) DO NOTHING`,
-        [
-          finAlunoId, aluno_id, turma_id, alunoValorVenda || valor_venda || null, dataAtual,
-          dataAtual, dataAtual
-        ]
-      );
+      await prisma.ci_financeiro_aluno.create({
+        data: {
+          id: finAlunoId,
+          aluno_id,
+          turma_id,
+          valor_venda: valorFinal ? formatDecimal(valorFinal) : null,
+          data_matricula: new Date(dataAtual),
+          data_criacao: new Date(dataAtual),
+          data_atualizacao: new Date(dataAtual),
+        }
+      });
       console.log('[Aluno-Turma] Financeiro-aluno (receita) criado:', finAlunoId);
     } catch (err) {
       console.error('[Aluno-Turma] Erro ao criar financeiro-aluno:', err.message);
     }
 
-    // Recalcular status da turma com base na capacidade
+    // Recalcular status da turma
     await recalcTurmaStatus(turma_id);
 
     console.log('[Aluno-Turma] Matricula criada:', id_indice);
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(created);
   } catch (error) {
     console.error('[Matricula Create] Erro:', error.message);
-    if (error.code === '23505') {
+    if (error.code === 'P2002') {
       return res.status(409).json({ error: 'Aluno ja esta matriculado nesta turma' });
     }
-    if (error.code === '23503') {
+    if (error.code === 'P2003') {
       return res.status(400).json({ error: 'Aluno ou turma nao existe' });
     }
     res.status(500).json({ error: error.message });
@@ -115,17 +95,11 @@ exports.matricularAluno = async (req, res) => {
 exports.obterMatricula = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const result = await query(
-      'SELECT * FROM lovable.ci_aluno_turma WHERE id_indice = $1',
-      [id]
-    );
-
-    if (result.rows.length === 0) {
+    const matricula = await prisma.ci_aluno_turma.findUnique({ where: { id_indice: id } });
+    if (!matricula) {
       return res.status(404).json({ error: 'Matricula nao encontrada' });
     }
-
-    res.json(result.rows[0]);
+    res.json(matricula);
   } catch (error) {
     console.error('[Matricula Get] Erro:', error.message);
     res.status(500).json({ error: error.message });
@@ -139,42 +113,31 @@ exports.listarMatriculas = async (req, res) => {
   try {
     const { aluno_id, turma_id, status, page = 1, limit = 10 } = req.query;
 
-    let sql = 'SELECT * FROM lovable.ci_aluno_turma WHERE 1=1';
-    const params = [];
-    let paramIndex = 1;
+    const where = {};
+    if (aluno_id) where.aluno_id = aluno_id;
+    if (turma_id) where.turma_id = turma_id;
+    if (status) where.status = status;
 
-    if (aluno_id) {
-      sql += ` AND aluno_id = $${paramIndex}`;
-      params.push(aluno_id);
-      paramIndex++;
-    }
-    if (turma_id) {
-      sql += ` AND turma_id = $${paramIndex}`;
-      params.push(turma_id);
-      paramIndex++;
-    }
-    if (status) {
-      sql += ` AND status = $${paramIndex}`;
-      params.push(status);
-      paramIndex++;
-    }
+    const take = parseInt(limit, 10) || 10;
+    const skip = ((parseInt(page, 10) || 1) - 1) * take;
 
-    sql += ' ORDER BY data_associacao DESC';
-
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    sql += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
-
-    const result = await query(sql, params);
-    const countResult = await query('SELECT COUNT(*) as total FROM lovable.ci_aluno_turma');
+    const [data, total] = await Promise.all([
+      prisma.ci_aluno_turma.findMany({
+        where,
+        orderBy: { data_associacao: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.ci_aluno_turma.count({ where }),
+    ]);
 
     res.json({
-      data: result.rows,
+      data,
       pagination: {
-        total: parseInt(countResult.rows[0].total),
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(countResult.rows[0].total / limit)
+        total,
+        page: parseInt(page, 10),
+        limit: take,
+        pages: Math.ceil(total / take),
       }
     });
   } catch (error) {
@@ -190,25 +153,22 @@ exports.atualizarMatricula = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-
     const dataAtual = getBrazilDate();
 
-    const result = await query(
-      `UPDATE lovable.ci_aluno_turma SET
-        status = COALESCE($1, status),
-        data_atualizacao = $2
-      WHERE id_indice = $3
-      RETURNING *`,
-      [status, dataAtual, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Matricula nao encontrada' });
-    }
+    const updated = await prisma.ci_aluno_turma.update({
+      where: { id_indice: id },
+      data: {
+        status: status || undefined,
+        data_atualizacao: new Date(dataAtual),
+      }
+    });
 
     console.log('[Aluno-Turma] Matricula atualizada:', id);
-    res.json(result.rows[0]);
+    res.json(updated);
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Matricula nao encontrada' });
+    }
     console.error('[Matricula Update] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
@@ -221,23 +181,17 @@ exports.deletarMatricula = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await query(
-      'DELETE FROM lovable.ci_aluno_turma WHERE id_indice = $1 RETURNING *',
-      [id]
-    );
+    const deleted = await prisma.ci_aluno_turma.delete({ where: { id_indice: id } });
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Matricula nao encontrada' });
-    }
-
-    const turma_id = result.rows[0].turma_id;
-
-    // Recalcular status da turma com base na capacidade
-    await recalcTurmaStatus(turma_id);
+    // Recalcular status da turma
+    await recalcTurmaStatus(deleted.turma_id);
 
     console.log('[Aluno-Turma] Matricula deletada:', id);
-    res.json({ message: 'Matricula deletada com sucesso', deletedMatricula: result.rows[0] });
+    res.json({ message: 'Matricula deletada com sucesso', deletedMatricula: deleted });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Matricula nao encontrada' });
+    }
     console.error('[Matricula Delete] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
@@ -247,9 +201,6 @@ exports.deletarMatricula = async (req, res) => {
 // TRANSFERIR ALUNO ENTRE TURMAS
 // ============================================================================
 exports.transferirAluno = async (req, res) => {
-  const { prisma } = require('../config/prismaClient');
-  const { getNextId } = require('../utils/sequentialId');
-
   try {
     const { aluno_id, turma_origem_id, turma_destino_id } = req.body;
 
@@ -320,7 +271,7 @@ exports.transferirAluno = async (req, res) => {
       });
     });
 
-    // 5. Recalcular status de ambas turmas (fora da transacao)
+    // 5. Recalcular status de ambas turmas
     await recalcTurmaStatus(turma_origem_id);
     await recalcTurmaStatus(turma_destino_id);
 
@@ -344,23 +295,17 @@ exports.obterAlunosTurmasView = async (req, res) => {
   try {
     const { aluno_id, turma_id } = req.query;
 
-    let sql = 'SELECT * FROM lovable.vw_alunos_turmas WHERE 1=1';
+    const conditions = [];
     const params = [];
-    let paramIndex = 1;
+    if (aluno_id) { conditions.push(`aluno_id = $${params.length + 1}`); params.push(aluno_id); }
+    if (turma_id) { conditions.push(`turma_id = $${params.length + 1}`); params.push(turma_id); }
 
-    if (aluno_id) {
-      sql += ` AND aluno_id = $${paramIndex}`;
-      params.push(aluno_id);
-      paramIndex++;
-    }
-    if (turma_id) {
-      sql += ` AND turma_id = $${paramIndex}`;
-      params.push(turma_id);
-      paramIndex++;
-    }
-
-    const result = await query(sql, params);
-    res.json(result.rows);
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await prisma.$queryRawUnsafe(
+      `SELECT * FROM lovable.vw_alunos_turmas ${whereClause}`,
+      ...params
+    );
+    res.json(result);
   } catch (error) {
     console.error('[View Alunos Turmas] Erro:', error.message);
     res.status(500).json({ error: error.message });
@@ -372,17 +317,23 @@ exports.obterAlunosTurmasView = async (req, res) => {
 // ============================================================================
 exports.estatisticasMatriculas = async (req, res) => {
   try {
-    const result = await query(
-      `SELECT
+    const result = await prisma.$queryRaw`
+      SELECT
         COUNT(*) as total_matriculas,
         COUNT(DISTINCT aluno_id) as total_alunos_unicos,
         COUNT(DISTINCT turma_id) as total_turmas_com_alunos,
         SUM(CASE WHEN status = 'inscrito' THEN 1 ELSE 0 END) as inscritos,
         SUM(CASE WHEN status = 'desassociado' THEN 1 ELSE 0 END) as desassociados
-       FROM lovable.ci_aluno_turma`
-    );
+      FROM lovable.ci_aluno_turma`;
 
-    res.json(result.rows[0]);
+    // Convert BigInt to Number for JSON serialization
+    const row = result[0] || {};
+    const serialized = {};
+    for (const [key, value] of Object.entries(row)) {
+      serialized[key] = typeof value === 'bigint' ? Number(value) : value;
+    }
+
+    res.json(serialized);
   } catch (error) {
     console.error('[Matriculas Stats] Erro:', error.message);
     res.status(500).json({ error: error.message });
@@ -396,14 +347,13 @@ exports.verificarMatricula = async (req, res) => {
   try {
     const { aluno_id, turma_id } = req.params;
 
-    const result = await query(
-      'SELECT * FROM lovable.ci_aluno_turma WHERE aluno_id = $1 AND turma_id = $2',
-      [aluno_id, turma_id]
-    );
+    const matricula = await prisma.ci_aluno_turma.findFirst({
+      where: { aluno_id, turma_id }
+    });
 
     res.json({
-      existe: result.rows.length > 0,
-      dados: result.rows.length > 0 ? result.rows[0] : null
+      existe: !!matricula,
+      dados: matricula || null
     });
   } catch (error) {
     console.error('[Verificar Matricula] Erro:', error.message);
