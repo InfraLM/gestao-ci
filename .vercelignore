@@ -1,0 +1,20 @@
+# Dev-only files
+.env
+.env.local
+backend/.env
+.mcp.json
+.claude/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Docs (not needed in deploy)
+*.md
+!CLAUDE.md

@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ci_alunos {
+  id               String    @id @db.VarChar(255)
+  nome             String    @db.VarChar(255)
+  cpf              String?   @db.VarChar(20)
+  email            String?   @db.VarChar(255)
+  telefone         String?   @db.VarChar(20)
+  data_nascimento  DateTime? @db.Date
+  endereco         String?   @db.VarChar(500)
+  status           String?   @db.VarChar(50)
+  observacoes      String?   @db.VarChar(1000)
+  vendedor         String?   @db.VarChar(100)
+  valor_venda      Decimal?  @db.Decimal(10, 2)
+  pos_graduacao    Boolean?  @default(false)
+  data_cadastro    DateTime? @db.Date
+  data_atualizacao DateTime? @db.Date
+
+  aluno_turma      ci_aluno_turma[]
+  financeiro_aluno ci_financeiro_aluno[]
+  onboarding       ci_onboarding[]
+
+  @@map("ci_alunos")
+}
+
+model ci_turmas {
+  id               String    @id @db.VarChar(255)
+  tipo             String?   @db.VarChar(255)
+  data_evento      DateTime? @db.Date
+  descricao        String?   @db.VarChar(1000)
+  horario          String?   @db.VarChar(100)
+  local_evento     String?   @db.VarChar(255)
+  capacidade       Int?
+  instrutor        String?   @db.VarChar(255)
+  status           String?   @db.VarChar(50)
+  data_criacao     DateTime? @db.Date
+  data_atualizacao DateTime? @db.Date
+
+  aluno_turma      ci_aluno_turma[]
+  financeiro       ci_financeiro[]
+  financeiro_aluno ci_financeiro_aluno[]
+
+  @@map("ci_turmas")
+}
+
+model ci_aluno_turma {
+  id_indice        String    @id @db.VarChar(255)
+  aluno_id         String    @db.VarChar(255)
+  turma_id         String    @db.VarChar(255)
+  status           String?   @db.VarChar(50)
+  data_associacao  DateTime? @db.Date
+  data_atualizacao DateTime? @db.Date
+
+  aluno ci_alunos @relation(fields: [aluno_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  turma ci_turmas @relation(fields: [turma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([aluno_id, turma_id], name: "uq_aluno_turma")
+  @@map("ci_aluno_turma")
+}
+
+model ci_financeiro {
+  id                String    @id @db.VarChar(255)
+  turma_id          String    @db.VarChar(255)
+  categoria         String    @db.VarChar(100)
+  descricao         String?   @db.VarChar(500)
+  valor_total       Decimal?  @db.Decimal(10, 2)
+  data_movimentacao DateTime  @db.Date
+  observacoes       String?   @db.VarChar(1000)
+  data_criacao      DateTime? @db.Date
+  data_atualizacao  DateTime? @db.Date
+
+  turma ci_turmas @relation(fields: [turma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("ci_financeiro")
+}
+
+model ci_financeiro_aluno {
+  id               String    @id @db.VarChar(255)
+  aluno_id         String    @db.VarChar(255)
+  turma_id         String    @db.VarChar(255)
+  valor_venda      Decimal?  @db.Decimal(10, 2)
+  data_matricula   DateTime? @db.Date
+  data_criacao     DateTime? @db.Date
+  data_atualizacao DateTime? @db.Date
+
+  aluno ci_alunos @relation(fields: [aluno_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  turma ci_turmas @relation(fields: [turma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([aluno_id, turma_id], name: "uq_fin_aluno_turma")
+  @@map("ci_financeiro_aluno")
+}
+
+model ci_onboarding {
+  id           String   @id @db.VarChar(255)
+  aluno_id     String   @db.VarChar(255)
+  etapa        String   @db.VarChar(100)
+  data_mudanca DateTime @db.Date
+
+  aluno ci_alunos @relation(fields: [aluno_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("ci_onboarding")
+}
+
+model ci_formulario {
+  id                    String    @id @db.VarChar(255)
+  data_resposta         DateTime? @db.Date
+  horario_resposta      String?   @db.VarChar(20)
+  nps                   Int?
+  avaliacao_organizacao String?   @db.VarChar(50)
+  avaliacao_leia        String?   @db.VarChar(50)
+  avaliacao_valter      String?   @db.VarChar(50)
+  avaliacao_apoio       String?   @db.VarChar(50)
+  avaliacao_geral       String?   @db.VarChar(50)
+  o_que_melhorar        String?   @db.VarChar(1000)
+  o_que_mais_gostou     String?   @db.VarChar(1000)
+  comentarios           String?   @db.VarChar(1000)
+
+  @@map("ci_formulario")
+}
+
+model apps_usuarios {
+  id           String    @id @db.VarChar
+  nome         String?   @db.VarChar
+  email        String?   @db.VarChar
+  login        String?   @db.VarChar
+  senha        String?   @db.VarChar
+  cargo        String?   @db.VarChar
+  ci           Boolean?
+  pfo          Boolean?
+  comercial    Boolean?
+  data_criacao DateTime? @db.Date
+  area         String?
+  ronda        Boolean?
+  reuniao      Boolean?
+
+  @@map("apps_usuarios")
+}

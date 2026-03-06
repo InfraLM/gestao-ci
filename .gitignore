@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Environment files (NEVER commit secrets)
+.env
+.env.local
+.env.production
+.env.*.local
+backend/.env
+
+# MCP config (contains DB credentials)
+.mcp.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor / IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Prisma generated (regenerated on install)
+backend/node_modules/.prisma/
+
+# Vercel
+.vercel/
+
+# Claude config (personal)
+.claude/
