@@ -105,12 +105,25 @@ const CalendarView: React.FC<{ classes: Class[]; onClassClick: (id: string) => v
     };
 
     const getClassesForDay = (day: number): Class[] => {
+        const cellDate = new Date(currentYear, currentMonth, day);
+        cellDate.setHours(0, 0, 0, 0);
+
         return classes.filter(c => {
-            if (!c.date) return false;
-            const parts = c.date.split('/');
-            if (parts.length !== 3) return false;
-            const [d, m, y] = parts;
-            return parseInt(d) === day && parseInt(m) === currentMonth + 1 && parseInt(y) === currentYear;
+            // Usar dateStart/dateEnd para range de dias
+            const startStr = c.dateStart;
+            const endStr = c.dateEnd || startStr;
+            if (!startStr) return false;
+
+            const parseDMY = (s: string) => {
+                const [d, m, y] = s.split('/');
+                const dt = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                dt.setHours(0, 0, 0, 0);
+                return dt;
+            };
+
+            const start = parseDMY(startStr);
+            const end = parseDMY(endStr);
+            return cellDate >= start && cellDate <= end;
         });
     };
 
@@ -220,12 +233,17 @@ const Classes: React.FC = () => {
             );
         }
 
-        // Filtro por data
+        // Helper para parsear DD/MM/AAAA
+        const parseDMY = (s: string) => {
+            const [d, m, y] = s.split('/');
+            return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        };
+
+        // Filtro por data (usa dateStart para comparacao)
         if (filters.dataInicio || filters.dataFim) {
             result = result.filter(c => {
-                if (!c.date) return false;
-                const [day, month, year] = c.date.split('/');
-                const classDate = new Date(`${year}-${month}-${day}`);
+                if (!c.dateStart) return false;
+                const classDate = parseDMY(c.dateStart);
 
                 if (filters.dataInicio && classDate < filters.dataInicio) return false;
                 if (filters.dataFim && classDate > filters.dataFim) return false;
@@ -234,14 +252,11 @@ const Classes: React.FC = () => {
             });
         }
 
-        // Ordenação por data
+        // Ordenação por data inicio
         result.sort((a, b) => {
-            if (!a.date || !b.date) return 0;
-
-            const [dayA, monthA, yearA] = a.date.split('/');
-            const [dayB, monthB, yearB] = b.date.split('/');
-            const dateA = new Date(`${yearA}-${monthA}-${dayA}`);
-            const dateB = new Date(`${yearB}-${monthB}-${dayB}`);
+            if (!a.dateStart || !b.dateStart) return 0;
+            const dateA = parseDMY(a.dateStart);
+            const dateB = parseDMY(b.dateStart);
 
             return filters.ordenacao === 'proximos'
                 ? dateA.getTime() - dateB.getTime()

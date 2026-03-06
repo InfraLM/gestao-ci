@@ -157,8 +157,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
 
     const formatTurmaDisplay = (turma: Turma): string => {
         const dataInicio = formatDateUTC(turma.data_evento_inicio);
-        const dataFim = formatDateUTC(turma.data_evento_fim);
-        return `${turma.tipo} | ${dataInicio} - ${dataFim}`;
+        const dataFim = turma.data_evento_fim ? formatDateUTC(turma.data_evento_fim) : null;
+        return dataFim ? `${turma.tipo} | ${dataInicio} - ${dataFim}` : `${turma.tipo} | ${dataInicio}`;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

@@ -193,6 +193,19 @@ exports.turmasComResumo = async (req, res) => {
       const percentual_ocupacao = Number(((alunos_inscritos / capacidade) * 100).toFixed(2));
       const { _count, ...rest } = r;
 
+      // Formatar datas para DD/MM/AAAA (UTC-safe)
+      const fmtDate = (d) => {
+        if (!d) return null;
+        const dt = new Date(d);
+        const dd = String(dt.getUTCDate()).padStart(2, '0');
+        const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        const yyyy = dt.getUTCFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      };
+      const dateStart = fmtDate(rest.data_evento_inicio);
+      const dateEnd = fmtDate(rest.data_evento_fim);
+      const date = dateStart ? (dateEnd ? `${dateStart} - ${dateEnd}` : dateStart) : null;
+
       return {
         ...rest,
         alunos_inscritos,
@@ -202,6 +215,9 @@ exports.turmasComResumo = async (req, res) => {
         students: alunos_inscritos,
         capacity: capacidade,
         progress: percentual_ocupacao,
+        date,
+        dateStart,
+        dateEnd,
         time: rest.horario,
         location: rest.local_evento,
         description: rest.descricao,

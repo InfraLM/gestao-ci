@@ -22,6 +22,8 @@ export interface Class {
     capacity: number;
     progress?: number;
     date?: string;
+    dateStart?: string;
+    dateEnd?: string;
     time?: string;
     location?: string;
     description?: string;

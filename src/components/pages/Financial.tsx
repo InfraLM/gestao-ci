@@ -328,7 +328,7 @@ const VisaoGeral: React.FC<{ turmas: TurmaResumo[] }> = ({ turmas }) => {
                     {turmas.map(t => (
                         <tr key={t.turma_id} className="border-b text-gray-700 hover:bg-gray-50">
                             <td className="p-3 font-medium">{t.turma_tipo}</td>
-                            <td className="p-3 text-sm">{t.data_evento_inicio ? `${formatDateUTC(t.data_evento_inicio)} - ${formatDateUTC(t.data_evento_fim)}` : '-'}</td>
+                            <td className="p-3 text-sm">{t.data_evento_inicio ? `${formatDateUTC(t.data_evento_inicio)}${t.data_evento_fim ? ` - ${formatDateUTC(t.data_evento_fim)}` : ''}` : '-'}</td>
                             <td className="p-3 text-center">{t.qtd_alunos}</td>
                             <td className="p-3 text-right font-semibold text-green-600">{formatCurrency(t.receitas)}</td>
                             <td className="p-3 text-right font-semibold text-red-600">{formatCurrency(t.despesas)}</td>
@@ -499,7 +499,7 @@ const PorTurma: React.FC<{
                                 <h3 className="font-semibold text-gray-900">{turma.turma_tipo}</h3>
                                 <p className="text-sm text-gray-500">
                                     {turma.turma_data_evento_inicio
-                                        ? `${formatDateUTC(turma.turma_data_evento_inicio)} - ${formatDateUTC(turma.turma_data_evento_fim)}`
+                                        ? `${formatDateUTC(turma.turma_data_evento_inicio)}${turma.turma_data_evento_fim ? ` - ${formatDateUTC(turma.turma_data_evento_fim)}` : ''}`
                                         : 'Sem data'
                                     } - {turma.receitas_turma.length} {turma.receitas_turma.length === 1 ? 'entrada' : 'entradas'}, {turma.gastos.length} {turma.gastos.length === 1 ? 'saida' : 'saidas'}
                                 </p>

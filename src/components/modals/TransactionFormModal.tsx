@@ -125,7 +125,7 @@ const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOpen, onC
                             onChange={(v) => setFormData(prev => ({ ...prev, turma_id: v }))}
                             options={turmas.map(t => ({
                                 value: t.id,
-                                label: `${t.tipo} | ${formatDateUTC(t.data_evento_inicio)} - ${formatDateUTC(t.data_evento_fim)}`
+                                label: `${t.tipo} | ${formatDateUTC(t.data_evento_inicio)}${t.data_evento_fim ? ` - ${formatDateUTC(t.data_evento_fim)}` : ''}`
                             }))}
                             placeholder="Selecione a turma..."
                         />

@@ -182,7 +182,7 @@ const Students: React.FC = () => {
                                         {students.map((student: any) => {
                                             const turmaInfo = student.aluno_turma?.[0]?.turma;
                                             const turmaLabel = turmaInfo
-                                                ? `${turmaInfo.tipo} | ${formatDateUTC(turmaInfo.data_evento_inicio)} - ${formatDateUTC(turmaInfo.data_evento_fim)}`
+                                                ? `${turmaInfo.tipo} | ${formatDateUTC(turmaInfo.data_evento_inicio)}${turmaInfo.data_evento_fim ? ` - ${formatDateUTC(turmaInfo.data_evento_fim)}` : ''}`
                                                 : '-';
                                             const temPagamento = student.financeiro_aluno?.length > 0 && parseFloat(student.financeiro_aluno[0]?.valor_venda || '0') > 0;
                                             return (

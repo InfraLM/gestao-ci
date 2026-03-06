@@ -221,7 +221,7 @@ const Onboarding: React.FC = () => {
             onChange={setFilterTurma}
             options={turmas.map(t => ({
               value: t.id,
-              label: `${t.tipo}${t.data_evento_inicio ? ` | ${formatDateUTC(t.data_evento_inicio)} - ${formatDateUTC(t.data_evento_fim)}` : ''}`
+              label: `${t.tipo}${t.data_evento_inicio ? ` | ${formatDateUTC(t.data_evento_inicio)}${t.data_evento_fim ? ` - ${formatDateUTC(t.data_evento_fim)}` : ''}` : ''}`
             }))}
             placeholder="Todas as turmas"
           />

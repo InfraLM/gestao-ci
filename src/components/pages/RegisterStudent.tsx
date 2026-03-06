@@ -63,9 +63,10 @@ const RegisterStudent: React.FC = () => {
 
   const formatTurmaLabel = (turma: Turma): string => {
     const dataInicio = formatDateUTC(turma.data_evento_inicio);
-    const dataFim = formatDateUTC(turma.data_evento_fim);
+    const dataFim = turma.data_evento_fim ? formatDateUTC(turma.data_evento_fim) : null;
     const vagas = turma.capacidade - (turma.alunos_inscritos || 0);
-    return `${turma.tipo} | ${dataInicio} - ${dataFim} (${vagas} vagas)`;
+    const dateStr = dataFim ? `${dataInicio} - ${dataFim}` : dataInicio;
+    return `${turma.tipo} | ${dateStr} (${vagas} vagas)`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
