@@ -4,31 +4,44 @@ const { Pool } = require('pg');
 // CONFIGURAÇÃO DO POSTGRESQL
 // ============================================================================
 
+const DATABASE_URL = process.env.DATABASE_URL;
+const useConnectionString = !!DATABASE_URL && !process.env.DB_HOST;
+
 console.log('\n' + '='.repeat(70));
-console.log('🔧 [Database Config] Configurando PostgreSQL...');
+console.log('[Database Config] Configurando PostgreSQL...');
 console.log('='.repeat(70));
-console.log('📋 Configurações carregadas:');
-console.log('   Host:     ', process.env.DB_HOST);
-console.log('   Port:     ', process.env.DB_PORT);
-console.log('   Database: ', process.env.DB_NAME);
-console.log('   User:     ', process.env.DB_USER);
-console.log('   Password: ', process.env.DB_PASSWORD);
+if (useConnectionString) {
+  console.log('   Modo: DATABASE_URL');
+} else {
+  console.log('   Host:     ', process.env.DB_HOST);
+  console.log('   Port:     ', process.env.DB_PORT);
+  console.log('   Database: ', process.env.DB_NAME);
+  console.log('   User:     ', process.env.DB_USER);
+}
 console.log('='.repeat(70) + '\n');
 
 // Criar pool de conexões
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  // Configurações do pool
-  max: 20, // máximo de conexões
-  idleTimeoutMillis: 30000, // 30 segundos
-  connectionTimeoutMillis: 5000, // 5 segundos para estabelecer conexão
-  // SSL desativado (sem certificado)
-  ssl: false,
-});
+const poolConfig = useConnectionString
+  ? {
+      connectionString: DATABASE_URL,
+      max: 5,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      ssl: { rejectUnauthorized: false },
+    }
+  : {
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT),
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      ssl: false,
+    };
+
+const pool = new Pool(poolConfig);
 
 // ============================================================================
 // EVENT LISTENERS DO POOL
