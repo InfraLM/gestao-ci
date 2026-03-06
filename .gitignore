@@ -39,5 +39,8 @@ backend/node_modules/.prisma/
 # Vercel
 .vercel/
 
+# Markdown docs
+*.md
+
 # Claude config (personal)
 .claude/
