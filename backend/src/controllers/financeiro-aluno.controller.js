@@ -1,5 +1,4 @@
 const { prisma } = require('../config/prismaClient');
-const { v4: uuidv4 } = require('uuid');
 const { formatDecimal, formatDecimalFields } = require('../utils/formatters');
 const { getBrazilDate } = require('../utils/dateBrazil');
 const { getNextId } = require('../utils/sequentialId');

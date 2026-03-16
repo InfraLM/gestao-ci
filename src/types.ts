@@ -1,52 +1,57 @@
 
 export interface Student {
     id: string;
-    name: string;
+    nome: string;
     cpf?: string;
     email?: string;
-    phone?: string;
-    birthDate?: string;
-    address?: string;
-    observations?: string;
-    dateJoined: string;
-    course: string;
-    status: 'Onboarding' | 'Active' | 'Completed' | 'Pending';
-    paymentStatus?: 'Paid' | 'Pending';
+    telefone?: string;
+    data_nascimento?: string;
+    endereco?: string;
+    observacoes?: string;
+    data_cadastro?: string;
+    status?: string;
+    vendedor?: string;
+    valor_venda?: number;
+    pos_graduacao?: boolean;
+    aluno_turma?: any[];
+    financeiro_aluno?: any[];
 }
 
 export interface Class {
     id: string;
-    name: string;
-    instructor?: string;
-    students: number;
-    capacity: number;
-    progress?: number;
-    date?: string;
-    dateStart?: string;
-    dateEnd?: string;
-    time?: string;
-    location?: string;
-    description?: string;
-    classStatus?: 'EM ABERTO' | 'CANCELADA' | 'LOTADA' | 'ACONTECEU';
+    tipo?: string;
+    instrutor?: string;
+    data_evento_inicio?: string;
+    data_evento_fim?: string;
+    horario?: string;
+    local_evento?: string;
+    capacidade?: number;
+    descricao?: string;
+    status?: string;
+    alunos_inscritos: number;
+    percentual_ocupacao?: number;
+    data_inicio_fmt?: string;
+    data_fim_fmt?: string;
+    data_display?: string;
 }
 
 export interface FinancialTransaction {
-    id: number;
-    date: string;
-    category: string;
-    description: string;
-    amount: number;
-    class: string;
-    type: 'Income' | 'Expense';
-    quantity?: number;
-    unitValue?: number;
-    observations?: string;
+    id: string;
+    turma_id: string;
+    categoria: string;
+    descricao?: string;
+    valor_total?: number;
+    data_movimentacao: string;
+    observacoes?: string;
 }
 
 export interface OnboardingStudent {
-    id: number;
-    name: string;
-    email: string;
-    step: 'Boas-vindas' | 'Envio do Livro' | 'Grupo da Turma' | 'Concluído';
-    progress: number;
+    id: string;
+    aluno_id: string;
+    nome: string;
+    email?: string;
+    telefone?: string;
+    etapa: string;
+    data_mudanca?: string;
+    turmas?: any[];
 }

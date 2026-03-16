@@ -70,20 +70,10 @@ const Students: React.FC = () => {
 
     const handleOpenModal = (student: any = null) => {
         if (student) {
-            // Map raw backend data to Student interface for the modal
-            const mapped: any = {
+            setEditingStudent({
                 ...student,
-                name: student.nome,
-                phone: student.telefone,
-                birthDate: student.data_nascimento,
-                address: student.endereco,
-                observations: student.observacoes,
-                status: student.status,
                 valor_venda: parseFloat(student.valor_venda) || 0,
-                vendedor: student.vendedor,
-                pos_graduacao: student.pos_graduacao,
-            };
-            setEditingStudent(mapped);
+            });
         } else {
             setEditingStudent(null);
         }

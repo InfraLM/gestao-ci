@@ -1,5 +1,5 @@
 const { prisma } = require('../config/prismaClient');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { formatDecimal } = require('../utils/formatters');
 const { getBrazilDate } = require('../utils/dateBrazil');
 const { getNextId } = require('../utils/sequentialId');
@@ -21,7 +21,7 @@ exports.criarAluno = async (req, res) => {
       dataNascimentoFormatted = new Date(data_nascimento + 'T00:00:00.000Z');
     }
 
-    const id = uuidv4();
+    const id = randomUUID();
     const now = getBrazilDate();
 
     const created = await prisma.ci_alunos.create({
@@ -49,7 +49,7 @@ exports.criarAluno = async (req, res) => {
     try {
       await prisma.ci_onboarding.create({
         data: {
-          id: uuidv4(),
+          id: randomUUID(),
           aluno_id: id,
           etapa: 'Boas-vindas',
           data_mudanca: new Date(now),

@@ -60,17 +60,17 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
     useEffect(() => {
         if (student) {
             setFormData({
-                nome: student.name || '',
+                nome: student.nome || '',
                 cpf: student.cpf || '',
                 email: student.email || '',
-                telefone: student.phone || '',
-                data_nascimento: student.birthDate ? new Date(student.birthDate) : null,
+                telefone: student.telefone || '',
+                data_nascimento: student.data_nascimento ? new Date(student.data_nascimento) : null,
                 status: student.status || 'Ativo',
-                endereco: student.address || '',
-                observacoes: student.observations || '',
-                pos_graduacao: (student as any).pos_graduacao || false,
-                valor_venda: parseFloat((student as any).valor_venda) || 0,
-                vendedor: (student as any).vendedor || user?.nome || '',
+                endereco: student.endereco || '',
+                observacoes: student.observacoes || '',
+                pos_graduacao: student.pos_graduacao || false,
+                valor_venda: parseFloat(String(student.valor_venda)) || 0,
+                vendedor: student.vendedor || user?.nome || '',
                 forma_pagamento: (student as any).forma_pagamento || 'A VISTA',
                 parcelas: (student as any).parcelas || 1,
             });

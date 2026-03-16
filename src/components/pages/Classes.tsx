@@ -10,20 +10,19 @@ import { useAuth } from '../../context/AuthContext';
 import { turmasAPI } from '../../services/api';
 
 const ClassCard: React.FC<{ classInfo: Class; onCardClick: () => void }> = ({ classInfo, onCardClick }) => {
-    const percentage = classInfo.capacity > 0
-        ? Math.round((classInfo.students / classInfo.capacity) * 100)
+    const cap = classInfo.capacidade || 0;
+    const percentage = cap > 0
+        ? Math.round((classInfo.alunos_inscritos / cap) * 100)
         : 0;
 
-    // Determinar cor da barra baseada no percentual
     const getProgressColor = () => {
         if (percentage >= 90) return 'bg-red-500';
         if (percentage >= 70) return 'bg-yellow-500';
         return 'bg-brand-teal';
     };
 
-    // Determinar cor do card baseada no status
     const getCardColor = () => {
-        switch (classInfo.classStatus) {
+        switch (classInfo.status) {
             case 'CANCELADA':
                 return 'bg-red-50 border-2 border-red-300';
             case 'LOTADA':
@@ -41,12 +40,12 @@ const ClassCard: React.FC<{ classInfo: Class; onCardClick: () => void }> = ({ cl
             onClick={onCardClick}
         >
             <div>
-                <h3 className="font-bold text-lg text-brand-dark">{classInfo.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{classInfo.date || 'Data não definida'}</p>
+                <h3 className="font-bold text-lg text-brand-dark">{classInfo.tipo}</h3>
+                <p className="text-sm text-gray-500 mt-1">{classInfo.data_display || 'Data não definida'}</p>
             </div>
             <div className="mt-4">
                 <div className="flex justify-between items-center text-sm text-gray-600">
-                    <span>{classInfo.students} alunos/{classInfo.capacity} capacidade</span>
+                    <span>{classInfo.alunos_inscritos} alunos/{cap} capacidade</span>
                     <span className="font-semibold">{percentage}%</span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full mt-1 overflow-hidden">
@@ -58,12 +57,12 @@ const ClassCard: React.FC<{ classInfo: Class; onCardClick: () => void }> = ({ cl
             </div>
             <div className="mt-4 flex justify-between items-center">
                 <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                    classInfo.classStatus === 'CANCELADA' ? 'bg-red-100 text-red-800' :
-                    classInfo.classStatus === 'LOTADA' ? 'bg-green-100 text-green-800' :
-                    classInfo.classStatus === 'ACONTECEU' ? 'bg-gray-200 text-gray-700' :
+                    classInfo.status === 'CANCELADA' ? 'bg-red-100 text-red-800' :
+                    classInfo.status === 'LOTADA' ? 'bg-green-100 text-green-800' :
+                    classInfo.status === 'ACONTECEU' ? 'bg-gray-200 text-gray-700' :
                     'bg-blue-100 text-blue-800'
                 }`}>
-                    {classInfo.classStatus || 'EM ABERTO'}
+                    {classInfo.status || 'EM ABERTO'}
                 </span>
                 <button className="text-gray-400 hover:text-brand-teal p-2 rounded-full bg-gray-100 hover:bg-gray-200">
                     <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -109,9 +108,8 @@ const CalendarView: React.FC<{ classes: Class[]; onClassClick: (id: string) => v
         cellDate.setHours(0, 0, 0, 0);
 
         return classes.filter(c => {
-            // Usar dateStart/dateEnd para range de dias
-            const startStr = c.dateStart;
-            const endStr = c.dateEnd || startStr;
+            const startStr = c.data_inicio_fmt;
+            const endStr = c.data_fim_fmt || startStr;
             if (!startStr) return false;
 
             const parseDMY = (s: string) => {
@@ -152,9 +150,9 @@ const CalendarView: React.FC<{ classes: Class[]; onClassClick: (id: string) => v
                                     <button
                                         key={c.id}
                                         onClick={() => onClassClick(c.id)}
-                                        className={`block w-full text-left px-1 py-0.5 rounded text-[10px] font-semibold truncate cursor-pointer hover:opacity-80 ${getBadgeColor(c.name)}`}
+                                        className={`block w-full text-left px-1 py-0.5 rounded text-[10px] font-semibold truncate cursor-pointer hover:opacity-80 ${getBadgeColor(c.tipo)}`}
                                     >
-                                        {c.name} ({c.students}/{c.capacity})
+                                        {c.tipo} ({c.alunos_inscritos}/{c.capacidade})
                                     </button>
                                 ))}
                             </div>
@@ -216,20 +214,20 @@ const Classes: React.FC = () => {
 
         // Filtro por tipo
         if (filters.tipo) {
-            result = result.filter(c => c.name?.includes(filters.tipo));
+            result = result.filter(c => c.tipo?.includes(filters.tipo));
         }
 
         // Filtro por status
         if (filters.status) {
-            result = result.filter(c => c.classStatus === filters.status);
+            result = result.filter(c => c.status === filters.status);
         }
 
         // Filtro por busca
         if (filters.busca) {
             const searchLower = filters.busca.toLowerCase();
             result = result.filter(c =>
-                c.name?.toLowerCase().includes(searchLower) ||
-                c.instructor?.toLowerCase().includes(searchLower)
+                c.tipo?.toLowerCase().includes(searchLower) ||
+                c.instrutor?.toLowerCase().includes(searchLower)
             );
         }
 
@@ -239,11 +237,11 @@ const Classes: React.FC = () => {
             return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
         };
 
-        // Filtro por data (usa dateStart para comparacao)
+        // Filtro por data (usa data_inicio_fmt para comparacao)
         if (filters.dataInicio || filters.dataFim) {
             result = result.filter(c => {
-                if (!c.dateStart) return false;
-                const classDate = parseDMY(c.dateStart);
+                if (!c.data_inicio_fmt) return false;
+                const classDate = parseDMY(c.data_inicio_fmt);
 
                 if (filters.dataInicio && classDate < filters.dataInicio) return false;
                 if (filters.dataFim && classDate > filters.dataFim) return false;
@@ -254,9 +252,9 @@ const Classes: React.FC = () => {
 
         // Ordenação por data inicio
         result.sort((a, b) => {
-            if (!a.dateStart || !b.dateStart) return 0;
-            const dateA = parseDMY(a.dateStart);
-            const dateB = parseDMY(b.dateStart);
+            if (!a.data_inicio_fmt || !b.data_inicio_fmt) return 0;
+            const dateA = parseDMY(a.data_inicio_fmt);
+            const dateB = parseDMY(b.data_inicio_fmt);
 
             return filters.ordenacao === 'proximos'
                 ? dateA.getTime() - dateB.getTime()

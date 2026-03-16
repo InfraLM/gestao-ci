@@ -1,5 +1,5 @@
 const { prisma } = require('../config/prismaClient');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { formatDecimal, formatDecimalFields } = require('../utils/formatters');
 const { getBrazilDate } = require('../utils/dateBrazil');
 
@@ -14,7 +14,7 @@ exports.criarFinanceiro = async (req, res) => {
       return res.status(400).json({ error: 'turma_id, categoria e data_movimentacao sao obrigatorios' });
     }
 
-    const id = uuidv4();
+    const id = randomUUID();
     const now = getBrazilDate();
 
     const created = await prisma.ci_financeiro.create({

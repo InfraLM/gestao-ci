@@ -1,5 +1,4 @@
 const { prisma } = require('../config/prismaClient');
-const { v4: uuidv4 } = require('uuid');
 const { getBrazilDate } = require('../utils/dateBrazil');
 
 const ETAPAS = ['Boas-vindas', 'Envio do Livro', 'Grupo da Turma', 'Concluído', 'Feedback'];

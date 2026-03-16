@@ -1,5 +1,5 @@
 const { prisma } = require('../config/prismaClient');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { recalcAllTurmaStatuses } = require('../utils/turmaStatus');
 
 // Helper: converte string YYYY-MM-DD para Date UTC
@@ -17,7 +17,7 @@ exports.criarTurma = async (req, res) => {
 
     if (!tipo) return res.status(400).json({ error: 'Tipo e obrigatorio' });
 
-    const id = uuidv4();
+    const id = randomUUID();
 
     const created = await prisma.ci_turmas.create({
       data: {
@@ -210,18 +210,9 @@ exports.turmasComResumo = async (req, res) => {
         ...rest,
         alunos_inscritos,
         percentual_ocupacao,
-        name: rest.tipo,
-        instructor: rest.instrutor,
-        students: alunos_inscritos,
-        capacity: capacidade,
-        progress: percentual_ocupacao,
-        date,
-        dateStart,
-        dateEnd,
-        time: rest.horario,
-        location: rest.local_evento,
-        description: rest.descricao,
-        classStatus: rest.status
+        data_display: date,
+        data_inicio_fmt: dateStart,
+        data_fim_fmt: dateEnd,
       };
     });
 
