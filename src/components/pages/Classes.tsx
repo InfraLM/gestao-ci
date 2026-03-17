@@ -22,15 +22,15 @@ const ClassCard: React.FC<{ classInfo: Class; onCardClick: () => void }> = ({ cl
     };
 
     const getCardColor = () => {
-        switch (classInfo.status) {
-            case 'CANCELADA':
-                return 'bg-red-50 border-2 border-red-300';
-            case 'LOTADA':
-                return 'bg-green-50 border-2 border-green-300';
-            case 'ACONTECEU':
-                return 'bg-gray-100 border-2 border-gray-300';
+        switch (classInfo.tipo) {
+            case 'ATLS':
+                return 'bg-teal-50 border-2 border-teal-300';
+            case 'ACLS':
+                return 'bg-purple-50 border-2 border-purple-300';
+            case 'BLS':
+                return 'bg-blue-50 border-2 border-blue-300';
             default:
-                return 'bg-white';
+                return 'bg-gray-50 border-2 border-gray-300';
         }
     };
 
@@ -75,13 +75,26 @@ const ClassCard: React.FC<{ classInfo: Class; onCardClick: () => void }> = ({ cl
     );
 };
 
-const getBadgeColor = (name?: string) => {
-    switch (name) {
-        case 'BLS': return 'bg-blue-100 text-blue-800';
-        case 'ACLS': return 'bg-red-100 text-red-800';
-        case 'ATLS': return 'bg-amber-100 text-amber-800';
-        default: return 'bg-gray-100 text-gray-800';
+const getCalendarBadgeColor = (classInfo: Class) => {
+    const cap = classInfo.capacidade || 0;
+    const ocupacao = cap > 0 ? (classInfo.alunos_inscritos / cap) * 100 : 0;
+
+    // Verificar se ja aconteceu
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    let jaAconteceu = classInfo.status === 'ACONTECEU';
+    if (!jaAconteceu && classInfo.data_fim_fmt) {
+        const [d, m, y] = classInfo.data_fim_fmt.split('/');
+        const dataFim = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        dataFim.setHours(0, 0, 0, 0);
+        jaAconteceu = dataFim < hoje;
     }
+
+    if (jaAconteceu) return 'bg-blue-200 text-blue-900';
+    if (classInfo.status === 'LOTADA' || ocupacao >= 100) return 'bg-green-200 text-green-900';
+    if (ocupacao >= 60) return 'bg-yellow-200 text-yellow-900';
+    if (ocupacao < 20) return 'bg-red-200 text-red-900';
+    return 'bg-gray-100 text-gray-800';
 };
 
 const CalendarView: React.FC<{ classes: Class[]; onClassClick: (id: string) => void }> = ({ classes, onClassClick }) => {
@@ -150,7 +163,7 @@ const CalendarView: React.FC<{ classes: Class[]; onClassClick: (id: string) => v
                                     <button
                                         key={c.id}
                                         onClick={() => onClassClick(c.id)}
-                                        className={`block w-full text-left px-1 py-0.5 rounded text-[10px] font-semibold truncate cursor-pointer hover:opacity-80 ${getBadgeColor(c.tipo)}`}
+                                        className={`block w-full text-left px-1 py-0.5 rounded text-[10px] font-semibold truncate cursor-pointer hover:opacity-80 ${getCalendarBadgeColor(c)}`}
                                     >
                                         {c.tipo} ({c.alunos_inscritos}/{c.capacidade})
                                     </button>

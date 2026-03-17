@@ -6,6 +6,20 @@ import { useAuth } from '../../context/AuthContext';
 import { turmasAPI, alunosAPI, financeiroAPI, financeiroAlunoAPI } from '../../services/api';
 import { formatCurrency } from '../../hooks/useCurrencyInput';
 
+function parseDateFromAPI(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  const parts = dateStr.split('T')[0].split('-');
+  return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+}
+
+function formatDateForAPI(date: Date | null): string | null {
+  if (!date) return null;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 interface ClassDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -69,8 +83,8 @@ const ClassDetailsModal: React.FC<ClassDetailsModalProps> = ({
       setFormData({
         tipo: turmaData.tipo || '',
         instrutor: turmaData.instrutor || '',
-        data_evento_inicio: turmaData.data_evento_inicio ? new Date(turmaData.data_evento_inicio) : null,
-        data_evento_fim: turmaData.data_evento_fim ? new Date(turmaData.data_evento_fim) : null,
+        data_evento_inicio: parseDateFromAPI(turmaData.data_evento_inicio),
+        data_evento_fim: parseDateFromAPI(turmaData.data_evento_fim),
         horario: turmaData.horario || '',
         local_evento: turmaData.local_evento || '',
         capacidade: turmaData.capacidade || 0,
@@ -105,8 +119,8 @@ const ClassDetailsModal: React.FC<ClassDetailsModalProps> = ({
     try {
       const dataToSubmit = {
         ...formData,
-        data_evento_inicio: formData.data_evento_inicio?.toISOString().split('T')[0],
-        data_evento_fim: formData.data_evento_fim?.toISOString().split('T')[0]
+        data_evento_inicio: formatDateForAPI(formData.data_evento_inicio),
+        data_evento_fim: formatDateForAPI(formData.data_evento_fim)
       };
 
       await turmasAPI.atualizar(classId, dataToSubmit);

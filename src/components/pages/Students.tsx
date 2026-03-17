@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import StatCard from '../StatCard';
 import ErrorMessage from '../ErrorMessage';
 import { Student } from '../../types';
@@ -37,6 +37,12 @@ const Students: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [deleting, setDeleting] = useState<string | null>(null);
 
+    const [sortColumn, setSortColumn] = useState<string>('data_cadastro');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [filterStatus, setFilterStatus] = useState<string>('');
+    const [filterVendedor, setFilterVendedor] = useState<string>('');
+    const [filterPagamento, setFilterPagamento] = useState<string>('');
+
     const fetchStudents = async () => {
         try {
             setLoading(true);
@@ -68,6 +74,90 @@ const Students: React.FC = () => {
         return () => clearTimeout(timeout);
     }, [searchTerm]);
 
+    const vendedorOptions = useMemo(() => {
+        const unique = [...new Set(students.map((s: any) => s.vendedor).filter(Boolean))];
+        return unique.sort();
+    }, [students]);
+
+    const displayStudents = useMemo(() => {
+        let filtered = [...students] as any[];
+
+        if (filterStatus) {
+            filtered = filtered.filter(s => s.status === filterStatus);
+        }
+        if (filterVendedor) {
+            filtered = filtered.filter(s => s.vendedor === filterVendedor);
+        }
+        if (filterPagamento) {
+            filtered = filtered.filter(s => {
+                const temPagamento = s.financeiro_aluno?.length > 0
+                    && parseFloat(s.financeiro_aluno[0]?.valor_venda || '0') > 0;
+                return filterPagamento === 'Paid' ? temPagamento : !temPagamento;
+            });
+        }
+
+        filtered.sort((a, b) => {
+            let valA: any, valB: any;
+            switch (sortColumn) {
+                case 'nome':
+                    valA = (a.nome || '').toLowerCase();
+                    valB = (b.nome || '').toLowerCase();
+                    break;
+                case 'telefone':
+                    valA = a.telefone || '';
+                    valB = b.telefone || '';
+                    break;
+                case 'turma':
+                    valA = a.aluno_turma?.[0]?.turma?.tipo || '';
+                    valB = b.aluno_turma?.[0]?.turma?.tipo || '';
+                    break;
+                case 'data_cadastro':
+                    valA = a.data_cadastro || '';
+                    valB = b.data_cadastro || '';
+                    break;
+                case 'vendedor':
+                    valA = (a.vendedor || '').toLowerCase();
+                    valB = (b.vendedor || '').toLowerCase();
+                    break;
+                case 'pagamento':
+                    valA = a.financeiro_aluno?.length > 0 && parseFloat(a.financeiro_aluno[0]?.valor_venda || '0') > 0 ? 1 : 0;
+                    valB = b.financeiro_aluno?.length > 0 && parseFloat(b.financeiro_aluno[0]?.valor_venda || '0') > 0 ? 1 : 0;
+                    break;
+                default:
+                    valA = '';
+                    valB = '';
+            }
+            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return filtered;
+    }, [students, filterStatus, filterVendedor, filterPagamento, sortColumn, sortDirection]);
+
+    const handleSort = (column: string) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    const SortHeader = ({ column, label }: { column: string; label: string }) => (
+        <th
+            className="p-3 cursor-pointer select-none hover:text-gray-700"
+            onClick={() => handleSort(column)}
+        >
+            <div className="flex items-center space-x-1">
+                <span>{label}</span>
+                <span className="text-xs">
+                    {sortColumn === column ? (sortDirection === 'asc' ? '\u25B2' : '\u25BC') : '\u21C5'}
+                </span>
+            </div>
+        </th>
+    );
+
     const handleOpenModal = (student: any = null) => {
         if (student) {
             setEditingStudent({
@@ -98,6 +188,8 @@ const Students: React.FC = () => {
             setDeleting(null);
         }
     };
+
+    const hasActiveFilters = filterStatus || filterVendedor || filterPagamento;
 
     return (
         <>
@@ -171,54 +263,107 @@ const Students: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead>
-                                        <tr className="text-sm text-gray-500 border-b">
-                                            <th className="p-3">NOME</th>
-                                            <th className="p-3">EMAIL</th>
-                                            <th className="p-3">TELEFONE</th>
-                                            <th className="p-3">TURMA</th>
-                                            <th className="p-3">PAGAMENTO</th>
-                                            <th className="p-3">ACOES</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {students.map((student: any) => {
-                                            const turmaInfo = student.aluno_turma?.[0]?.turma;
-                                            const turmaLabel = turmaInfo
-                                                ? `${turmaInfo.tipo} | ${formatDateUTC(turmaInfo.data_evento_inicio)}${turmaInfo.data_evento_fim ? ` - ${formatDateUTC(turmaInfo.data_evento_fim)}` : ''}`
-                                                : '-';
-                                            const temPagamento = student.financeiro_aluno?.length > 0 && parseFloat(student.financeiro_aluno[0]?.valor_venda || '0') > 0;
-                                            return (
-                                            <tr key={student.id} className="border-b text-gray-700 hover:bg-gray-50">
-                                                <td className="p-3 font-medium">{student.nome}</td>
-                                                <td className="p-3">{student.email || '-'}</td>
-                                                <td className="p-3">{student.telefone || '-'}</td>
-                                                <td className="p-3">{turmaLabel}</td>
-                                                <td className="p-3"><PaymentStatusBadge status={temPagamento ? 'Paid' : 'Pending'} /></td>
-                                                <td className="p-3">
-                                                    <div className="flex items-center space-x-3">
-                                                        <button onClick={() => handleOpenModal(student)} className="text-gray-400 hover:text-blue-500">
-                                                            <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(student)}
-                                                            disabled={deleting === student.id}
-                                                            className={`text-gray-400 hover:text-red-500 ${deleting === student.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        >
-                                                            <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                            <div className="flex flex-wrap gap-4 mb-4">
+                                <select
+                                    value={filterStatus}
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                    className="border rounded-lg px-3 py-2 text-sm text-gray-700"
+                                >
+                                    <option value="">Todos os Status</option>
+                                    <option value="Em Onboarding">Em Onboarding</option>
+                                    <option value="Ativo">Ativo</option>
+                                    <option value="Inativo">Inativo</option>
+                                    <option value="Formado">Formado</option>
+                                </select>
+
+                                <select
+                                    value={filterVendedor}
+                                    onChange={(e) => setFilterVendedor(e.target.value)}
+                                    className="border rounded-lg px-3 py-2 text-sm text-gray-700"
+                                >
+                                    <option value="">Todos os Vendedores</option>
+                                    {vendedorOptions.map(v => (
+                                        <option key={v} value={v}>{v}</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    value={filterPagamento}
+                                    onChange={(e) => setFilterPagamento(e.target.value)}
+                                    className="border rounded-lg px-3 py-2 text-sm text-gray-700"
+                                >
+                                    <option value="">Todos Pagamentos</option>
+                                    <option value="Paid">Pago</option>
+                                    <option value="Pending">Pendente</option>
+                                </select>
+
+                                {hasActiveFilters && (
+                                    <button
+                                        onClick={() => { setFilterStatus(''); setFilterVendedor(''); setFilterPagamento(''); }}
+                                        className="text-sm text-red-500 hover:text-red-700 underline"
+                                    >
+                                        Limpar filtros
+                                    </button>
+                                )}
                             </div>
+
+                            {displayStudents.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    Nenhum aluno encontrado com os filtros aplicados.
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="text-sm text-gray-500 border-b">
+                                                <SortHeader column="nome" label="NOME" />
+                                                <SortHeader column="telefone" label="TELEFONE" />
+                                                <SortHeader column="turma" label="TURMA" />
+                                                <SortHeader column="data_cadastro" label="DATA DE CADASTRO" />
+                                                <SortHeader column="vendedor" label="VENDEDOR" />
+                                                <SortHeader column="pagamento" label="PAGAMENTO" />
+                                                <th className="p-3">ACOES</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {displayStudents.map((student: any) => {
+                                                const turmaInfo = student.aluno_turma?.[0]?.turma;
+                                                const turmaLabel = turmaInfo
+                                                    ? `${turmaInfo.tipo} | ${formatDateUTC(turmaInfo.data_evento_inicio)}${turmaInfo.data_evento_fim ? ` - ${formatDateUTC(turmaInfo.data_evento_fim)}` : ''}`
+                                                    : '-';
+                                                const temPagamento = student.financeiro_aluno?.length > 0 && parseFloat(student.financeiro_aluno[0]?.valor_venda || '0') > 0;
+                                                return (
+                                                <tr key={student.id} className="border-b text-gray-700 hover:bg-gray-50">
+                                                    <td className="p-3 font-medium">{student.nome}</td>
+                                                    <td className="p-3">{student.telefone || '-'}</td>
+                                                    <td className="p-3">{turmaLabel}</td>
+                                                    <td className="p-3">{formatDateUTC(student.data_cadastro)}</td>
+                                                    <td className="p-3">{student.vendedor || '-'}</td>
+                                                    <td className="p-3"><PaymentStatusBadge status={temPagamento ? 'Paid' : 'Pending'} /></td>
+                                                    <td className="p-3">
+                                                        <div className="flex items-center space-x-3">
+                                                            <button onClick={() => handleOpenModal(student)} className="text-gray-400 hover:text-blue-500">
+                                                                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(student)}
+                                                                disabled={deleting === student.id}
+                                                                className={`text-gray-400 hover:text-red-500 ${deleting === student.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                             <div className="mt-4 text-sm text-gray-500 text-right">
-                                {students.length} aluno{students.length !== 1 ? 's' : ''} encontrado{students.length !== 1 ? 's' : ''}
+                                {displayStudents.length} aluno{displayStudents.length !== 1 ? 's' : ''} encontrado{displayStudents.length !== 1 ? 's' : ''}
+                                {displayStudents.length !== students.length && ` (de ${students.length} total)`}
                             </div>
                         </>
                     )}
