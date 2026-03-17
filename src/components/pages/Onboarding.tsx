@@ -4,7 +4,7 @@ import Select from '../Select';
 import { onboardingAPI, turmasAPI } from '../../services/api';
 import { formatDateUTC } from '../../utils/dateUtils';
 
-const ETAPAS = ['Boas-vindas', 'Envio do Livro', 'Grupo da Turma', 'Concluído', 'Feedback'];
+const ETAPAS = ['Boas-vindas', 'Grupo da Turma', 'Envio do Livro', 'Concluído', 'Feedback'];
 
 interface OnboardingRecord {
   id: string;

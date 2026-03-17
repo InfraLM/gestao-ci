@@ -121,7 +121,7 @@ const Reports: React.FC = () => {
         }));
 
     // Onboarding pipeline
-    const etapas = ['Boas-vindas', 'Envio do Livro', 'Grupo da Turma', 'Concluido', 'Feedback'];
+    const etapas = ['Boas-vindas', 'Grupo da Turma', 'Envio do Livro', 'Concluido', 'Feedback'];
     const onboardingData = etapas.map(etapa => ({
         name: etapa,
         value: onboardingCounts[etapa] || 0,

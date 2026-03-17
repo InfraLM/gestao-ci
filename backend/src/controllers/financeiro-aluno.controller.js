@@ -22,7 +22,7 @@ exports.criarFinanceiroAluno = async (req, res) => {
         id,
         aluno_id,
         turma_id,
-        valor_venda: valor_venda ? formatDecimal(valor_venda) : null,
+        valor_venda: formatDecimal(valor_venda || 0),
         data_matricula: data_matricula ? new Date(data_matricula) : null,
         data_criacao: new Date(now),
         data_atualizacao: new Date(now),

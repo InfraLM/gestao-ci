@@ -37,7 +37,7 @@ exports.criarAluno = async (req, res) => {
         observacoes: observacoes || null,
         vendedor: vendedor || null,
         pos_graduacao: pos_graduacao || false,
-        valor_venda: valor_venda ? formatDecimal(valor_venda) : null,
+        valor_venda: formatDecimal(valor_venda || 0),
         data_cadastro: new Date(now),
         data_atualizacao: new Date(now),
       }
@@ -93,7 +93,7 @@ exports.criarAluno = async (req, res) => {
             id: finAlunoId,
             aluno_id: id,
             turma_id: turma_id,
-            valor_venda: valor_venda ? formatDecimal(valor_venda) : null,
+            valor_venda: formatDecimal(valor_venda || 0),
             forma_pagamento: forma_pagamento || 'A VISTA',
             parcelas: forma_pagamento === 'PARCELADO' ? (parseInt(parcelas) || 1) : 1,
             data_matricula: new Date(now),
@@ -202,12 +202,24 @@ exports.atualizarAluno = async (req, res) => {
       updateData.data_nascimento = new Date(updateData.data_nascimento + 'T00:00:00.000Z');
     }
     if (updateData.valor_venda !== undefined) {
-      updateData.valor_venda = updateData.valor_venda ? formatDecimal(updateData.valor_venda) : null;
+      updateData.valor_venda = formatDecimal(updateData.valor_venda || 0);
     }
 
     try {
       const updated = await prisma.ci_alunos.update({ where: { id }, data: updateData });
       console.log('[Alunos] Aluno atualizado:', id);
+
+      // Propagar valor_venda para ci_financeiro_aluno
+      if (req.body.valor_venda !== undefined) {
+        await prisma.ci_financeiro_aluno.updateMany({
+          where: { aluno_id: id },
+          data: {
+            valor_venda: updateData.valor_venda,
+            data_atualizacao: new Date(now),
+          }
+        });
+      }
+
       res.json(updated);
     } catch (err) {
       if (err.code === 'P2002') {

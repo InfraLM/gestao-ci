@@ -1,7 +1,7 @@
 const { prisma } = require('../config/prismaClient');
 const { getBrazilDate } = require('../utils/dateBrazil');
 
-const ETAPAS = ['Boas-vindas', 'Envio do Livro', 'Grupo da Turma', 'Concluído', 'Feedback'];
+const ETAPAS = ['Boas-vindas', 'Grupo da Turma', 'Envio do Livro', 'Concluído', 'Feedback'];
 
 // ============================================================================
 // LISTAR ONBOARDING (com filtros: etapa, turma_id, nome)
