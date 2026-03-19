@@ -3,6 +3,7 @@ const { getBrazilDate } = require('../utils/dateBrazil');
 const { getNextId } = require('../utils/sequentialId');
 const { recalcTurmaStatus } = require('../utils/turmaStatus');
 const { formatDecimal } = require('../utils/formatters');
+const { SEM_TURMA_ID } = require('../utils/seedSemTurma');
 
 // ============================================================================
 // MATRICULAR ALUNO EM TURMA
@@ -46,15 +47,22 @@ exports.matricularAluno = async (req, res) => {
       }
     });
 
+    // Remover registro "Sem Turma" se existir (aluno esta sendo vinculado a turma real)
+    try {
+      await prisma.ci_aluno_turma.deleteMany({
+        where: { aluno_id, turma_id: SEM_TURMA_ID }
+      });
+      await prisma.ci_financeiro_aluno.deleteMany({
+        where: { aluno_id, turma_id: SEM_TURMA_ID }
+      });
+    } catch (err) {
+      console.error('[Aluno-Turma] Erro ao limpar Sem Turma:', err.message);
+    }
+
     // Criar ci_financeiro_aluno (receita) automaticamente
     try {
       const finAlunoId = await getNextId('ci_financeiro_aluno', 'id');
-      // Buscar valor_venda do aluno se nao foi informado
-      let valorFinal = valor_venda;
-      if (!valorFinal) {
-        const aluno = await prisma.ci_alunos.findUnique({ where: { id: aluno_id }, select: { valor_venda: true } });
-        valorFinal = aluno?.valor_venda;
-      }
+      const valorFinal = valor_venda || 0;
 
       await prisma.ci_financeiro_aluno.create({
         data: {

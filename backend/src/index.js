@@ -3,6 +3,7 @@ const path = require('path');
 const { testConnection } = require('./config/prismaClient');
 
 const app = require('./app');
+const { ensureSemTurma } = require('./utils/seedSemTurma');
 
 const PORT = process.env.PORT || 3001;
 
@@ -23,6 +24,7 @@ async function startServer() {
       console.warn('\n⚠️  [Server] SERVIDOR INICIANDO SEM CONEXÃO COM BANCO!');
     } else {
       console.log('\n✅ [Server] Conexão com banco estabelecida!\n');
+      await ensureSemTurma();
     }
 
     app.listen(PORT, () => {

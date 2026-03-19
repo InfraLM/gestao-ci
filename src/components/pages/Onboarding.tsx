@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ErrorMessage from '../ErrorMessage';
 import Select from '../Select';
+import Modal from '../Modal';
 import { onboardingAPI, turmasAPI } from '../../services/api';
 import { formatDateUTC } from '../../utils/dateUtils';
 
 const ETAPAS = ['Boas-vindas', 'Grupo da Turma', 'Envio do Livro', 'Concluído', 'Feedback'];
+
+const ETAPA_ICONS: Record<string, string> = {
+  'Boas-vindas': '\u{1F44B}',
+  'Grupo da Turma': '\u{1F465}',
+  'Envio do Livro': '\u{1F4DA}',
+  'Concluído': '\u2705',
+  'Feedback': '\u{1F4AC}',
+};
 
 interface OnboardingRecord {
   id: string;
@@ -17,6 +26,13 @@ interface OnboardingRecord {
   turmas?: { id: string; tipo: string; data_evento_inicio?: string; data_evento_fim?: string }[];
 }
 
+interface HistoricoEntry {
+  id: string;
+  aluno_id: string;
+  etapa: string;
+  data_mudanca: string;
+}
+
 interface Turma {
   id: string;
   tipo: string;
@@ -25,7 +41,7 @@ interface Turma {
 }
 
 // ============================================================================
-// FLOW CARD (contagem por etapa)
+// FLOW CARD
 // ============================================================================
 const FlowCard: React.FC<{ title: string; count: number; isActive: boolean; onClick: () => void }> = ({
   title, count, isActive, onClick
@@ -49,7 +65,8 @@ const FlowCard: React.FC<{ title: string; count: number; isActive: boolean; onCl
 const StudentCard: React.FC<{
   student: OnboardingRecord;
   onUpdate: () => void;
-}> = ({ student, onUpdate }) => {
+  onClickHistorico: (student: OnboardingRecord) => void;
+}> = ({ student, onUpdate, onClickHistorico }) => {
   const [updating, setUpdating] = useState(false);
 
   const handleEtapaChange = async (novaEtapa: string) => {
@@ -80,9 +97,12 @@ const StudentCard: React.FC<{
   const isLastStep = currentIndex >= ETAPAS.length - 1;
 
   return (
-    <div className={`bg-white p-4 rounded-lg shadow-md border-l-4 ${
-      student.etapa === 'Concluído' ? 'border-green-500' : 'border-brand-teal'
-    } ${updating ? 'opacity-50' : ''}`}>
+    <div
+      className={`bg-white p-4 rounded-lg shadow-md border-l-4 cursor-pointer hover:shadow-lg transition-shadow ${
+        student.etapa === 'Concluído' ? 'border-green-500' : 'border-brand-teal'
+      } ${updating ? 'opacity-50' : ''}`}
+      onClick={() => onClickHistorico(student)}
+    >
       <div className="flex justify-between items-start">
         <div>
           <p className="font-bold text-gray-800">{student.nome}</p>
@@ -99,7 +119,7 @@ const StudentCard: React.FC<{
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         <div className="flex-1">
           <Select
             value={student.etapa}
@@ -126,6 +146,94 @@ const StudentCard: React.FC<{
 };
 
 // ============================================================================
+// MODAL DE HISTORICO
+// ============================================================================
+const HistoricoModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  student: OnboardingRecord | null;
+}> = ({ isOpen, onClose, student }) => {
+  const [historico, setHistorico] = useState<HistoricoEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && student) {
+      setLoading(true);
+      onboardingAPI.historico(student.aluno_id)
+        .then((result: any) => {
+          setHistorico(result.data || []);
+        })
+        .catch((err: any) => {
+          console.error('Erro ao carregar historico:', err);
+          setHistorico([]);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [isOpen, student]);
+
+  if (!student) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`Historico de Onboarding`}>
+      <div className="mb-4">
+        <p className="text-lg font-semibold text-gray-800">{student.nome}</p>
+        {student.email && <p className="text-sm text-gray-500">{student.email}</p>}
+        {student.turmas && student.turmas.length > 0 && (
+          <div className="flex gap-1 mt-2">
+            {student.turmas.map(t => (
+              <span key={t.id} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                {t.tipo}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t pt-4">
+        <h3 className="text-sm font-semibold text-gray-600 mb-4">TIMELINE DE ETAPAS</h3>
+        {loading ? (
+          <p className="text-gray-500 text-center py-4">Carregando...</p>
+        ) : historico.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Nenhum registro encontrado.</p>
+        ) : (
+          <div className="relative pl-6">
+            {/* Linha vertical */}
+            <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gray-200" />
+
+            {historico.map((entry, index) => {
+              const isLast = index === historico.length - 1;
+              return (
+                <div key={entry.id} className="relative mb-6 last:mb-0">
+                  {/* Bolinha */}
+                  <div className={`absolute -left-6 w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                    isLast ? 'bg-brand-teal text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {ETAPA_ICONS[entry.etapa] ? (
+                      <span className="text-[10px]">{ETAPA_ICONS[entry.etapa]}</span>
+                    ) : (
+                      <span className="text-[10px]">{index + 1}</span>
+                    )}
+                  </div>
+
+                  <div className={`pl-3 ${isLast ? '' : 'opacity-70'}`}>
+                    <p className={`font-semibold ${isLast ? 'text-brand-teal' : 'text-gray-700'}`}>
+                      {entry.etapa}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {formatDateUTC(entry.data_mudanca)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
+// ============================================================================
 // PAGINA PRINCIPAL
 // ============================================================================
 const Onboarding: React.FC = () => {
@@ -137,6 +245,8 @@ const Onboarding: React.FC = () => {
   const [filterEtapa, setFilterEtapa] = useState('');
   const [filterTurma, setFilterTurma] = useState('');
   const [filterNome, setFilterNome] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<OnboardingRecord | null>(null);
+  const [isHistoricoOpen, setIsHistoricoOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -170,7 +280,8 @@ const Onboarding: React.FC = () => {
     const loadTurmas = async () => {
       try {
         const result = await turmasAPI.listar({ limit: '200' });
-        setTurmas(result.data || []);
+        const data = result.data || [];
+        setTurmas(data.filter((t: any) => t.id !== 'Sem Turma'));
       } catch (err) {
         console.error('Erro ao carregar turmas:', err);
       }
@@ -182,8 +293,19 @@ const Onboarding: React.FC = () => {
     setFilterEtapa(prev => prev === etapa ? '' : etapa);
   };
 
+  const handleClickHistorico = (student: OnboardingRecord) => {
+    setSelectedStudent(student);
+    setIsHistoricoOpen(true);
+  };
+
   return (
     <div className="p-8">
+      <HistoricoModal
+        isOpen={isHistoricoOpen}
+        onClose={() => { setIsHistoricoOpen(false); setSelectedStudent(null); }}
+        student={selectedStudent}
+      />
+
       <header>
         <h1 className="text-3xl font-bold text-gray-900">Pipeline de Onboarding</h1>
         <p className="text-gray-500 mt-1">Acompanhe o processo de integracao dos novos alunos</p>
@@ -254,6 +376,7 @@ const Onboarding: React.FC = () => {
                 key={student.id}
                 student={student}
                 onUpdate={loadData}
+                onClickHistorico={handleClickHistorico}
               />
             ))}
           </div>

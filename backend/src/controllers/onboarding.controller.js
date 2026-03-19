@@ -1,33 +1,18 @@
 const { prisma } = require('../config/prismaClient');
+const { randomUUID } = require('crypto');
 const { getBrazilDate } = require('../utils/dateBrazil');
 
 const ETAPAS = ['Boas-vindas', 'Grupo da Turma', 'Envio do Livro', 'Concluído', 'Feedback'];
 
 // ============================================================================
-// LISTAR ONBOARDING (com filtros: etapa, turma_id, nome)
+// LISTAR ONBOARDING — etapa atual de cada aluno (registro mais recente)
 // ============================================================================
 exports.listarOnboarding = async (req, res) => {
   try {
     const { etapa, turma_id, nome } = req.query;
 
-    const where = {};
-    if (etapa) where.etapa = etapa;
-
-    // Filtro por nome do aluno
-    if (nome) {
-      where.aluno = { nome: { contains: nome, mode: 'insensitive' } };
-    }
-
-    // Filtro por turma: alunos que estao associados a essa turma
-    if (turma_id) {
-      where.aluno = {
-        ...where.aluno,
-        aluno_turma: { some: { turma_id } }
-      };
-    }
-
-    const data = await prisma.ci_onboarding.findMany({
-      where,
+    // Buscar todos os registros ordenados por data desc
+    const allRecords = await prisma.ci_onboarding.findMany({
       include: {
         aluno: {
           select: {
@@ -44,8 +29,15 @@ exports.listarOnboarding = async (req, res) => {
       orderBy: { data_mudanca: 'desc' }
     });
 
-    // Formatar resposta
-    const result = data.map(item => ({
+    // Agrupar por aluno_id, pegar apenas o mais recente de cada
+    const latestByAluno = new Map();
+    for (const record of allRecords) {
+      if (!latestByAluno.has(record.aluno_id)) {
+        latestByAluno.set(record.aluno_id, record);
+      }
+    }
+
+    let result = Array.from(latestByAluno.values()).map(item => ({
       id: item.id,
       aluno_id: item.aluno_id,
       etapa: item.etapa,
@@ -53,13 +45,27 @@ exports.listarOnboarding = async (req, res) => {
       nome: item.aluno.nome,
       email: item.aluno.email,
       telefone: item.aluno.telefone,
-      turmas: item.aluno.aluno_turma.map(at => ({
-        id: at.turma.id,
-        tipo: at.turma.tipo,
-        data_evento_inicio: at.turma.data_evento_inicio,
-        data_evento_fim: at.turma.data_evento_fim
-      }))
+      turmas: item.aluno.aluno_turma
+        .filter(at => at.turma.id !== 'Sem Turma')
+        .map(at => ({
+          id: at.turma.id,
+          tipo: at.turma.tipo,
+          data_evento_inicio: at.turma.data_evento_inicio,
+          data_evento_fim: at.turma.data_evento_fim
+        }))
     }));
+
+    // Aplicar filtros
+    if (etapa) {
+      result = result.filter(r => r.etapa === etapa);
+    }
+    if (nome) {
+      const nomeLower = nome.toLowerCase();
+      result = result.filter(r => r.nome.toLowerCase().includes(nomeLower));
+    }
+    if (turma_id) {
+      result = result.filter(r => r.turmas.some(t => t.id === turma_id));
+    }
 
     res.json({ data: result });
   } catch (error) {
@@ -69,13 +75,14 @@ exports.listarOnboarding = async (req, res) => {
 };
 
 // ============================================================================
-// OBTER ONBOARDING POR ALUNO
+// OBTER ONBOARDING POR ALUNO — etapa atual (registro mais recente)
 // ============================================================================
 exports.obterPorAluno = async (req, res) => {
   try {
     const { alunoId } = req.params;
     const record = await prisma.ci_onboarding.findFirst({
-      where: { aluno_id: alunoId }
+      where: { aluno_id: alunoId },
+      orderBy: { data_mudanca: 'desc' }
     });
     if (!record) return res.status(404).json({ error: 'Registro de onboarding nao encontrado' });
     res.json(record);
@@ -86,7 +93,24 @@ exports.obterPorAluno = async (req, res) => {
 };
 
 // ============================================================================
-// ATUALIZAR ETAPA
+// HISTORICO DE ONBOARDING POR ALUNO — todos os registros
+// ============================================================================
+exports.historicoAluno = async (req, res) => {
+  try {
+    const { alunoId } = req.params;
+    const records = await prisma.ci_onboarding.findMany({
+      where: { aluno_id: alunoId },
+      orderBy: { data_mudanca: 'asc' }
+    });
+    res.json({ data: records });
+  } catch (error) {
+    console.error('[Onboarding Historico] Erro:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ============================================================================
+// ATUALIZAR ETAPA — cria novo registro (log), mantém antigo
 // ============================================================================
 exports.atualizarEtapa = async (req, res) => {
   try {
@@ -97,30 +121,46 @@ exports.atualizarEtapa = async (req, res) => {
       return res.status(400).json({ error: `Etapa invalida. Opcoes: ${ETAPAS.join(', ')}` });
     }
 
+    // Buscar registro atual para obter aluno_id
+    const current = await prisma.ci_onboarding.findUnique({ where: { id } });
+    if (!current) return res.status(404).json({ error: 'Registro nao encontrado' });
+
+    // Se a etapa e a mesma, nao criar novo registro
+    if (current.etapa === etapa) {
+      return res.json(current);
+    }
+
     const now = getBrazilDate();
-    const updated = await prisma.ci_onboarding.update({
-      where: { id },
-      data: { etapa, data_mudanca: new Date(now) }
+    const newId = randomUUID();
+
+    const created = await prisma.ci_onboarding.create({
+      data: {
+        id: newId,
+        aluno_id: current.aluno_id,
+        etapa,
+        data_mudanca: new Date(now),
+      }
     });
 
-    console.log('[Onboarding] Etapa atualizada:', id, '->', etapa);
-    res.json(updated);
+    console.log('[Onboarding] Nova etapa registrada:', current.aluno_id, current.etapa, '->', etapa);
+    res.json(created);
   } catch (error) {
-    if (error.code === 'P2025') return res.status(404).json({ error: 'Registro nao encontrado' });
     console.error('[Onboarding Update] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
 
 // ============================================================================
-// AVANCAR ETAPA (proximo passo automatico)
+// AVANCAR ETAPA — cria novo registro com proxima etapa
 // ============================================================================
 exports.avancarEtapa = async (req, res) => {
   try {
     const { alunoId } = req.params;
 
+    // Buscar registro mais recente do aluno
     const record = await prisma.ci_onboarding.findFirst({
-      where: { aluno_id: alunoId }
+      where: { aluno_id: alunoId },
+      orderBy: { data_mudanca: 'desc' }
     });
 
     if (!record) return res.status(404).json({ error: 'Registro de onboarding nao encontrado' });
@@ -132,14 +172,19 @@ exports.avancarEtapa = async (req, res) => {
 
     const novaEtapa = ETAPAS[currentIndex + 1];
     const now = getBrazilDate();
+    const newId = randomUUID();
 
-    const updated = await prisma.ci_onboarding.update({
-      where: { id: record.id },
-      data: { etapa: novaEtapa, data_mudanca: new Date(now) }
+    const created = await prisma.ci_onboarding.create({
+      data: {
+        id: newId,
+        aluno_id: alunoId,
+        etapa: novaEtapa,
+        data_mudanca: new Date(now),
+      }
     });
 
     console.log('[Onboarding] Etapa avancada:', alunoId, record.etapa, '->', novaEtapa);
-    res.json(updated);
+    res.json(created);
   } catch (error) {
     console.error('[Onboarding Avancar] Erro:', error.message);
     res.status(500).json({ error: error.message });
@@ -147,18 +192,24 @@ exports.avancarEtapa = async (req, res) => {
 };
 
 // ============================================================================
-// CONTAGEM POR ETAPA
+// CONTAGEM POR ETAPA — conta apenas etapa atual de cada aluno
 // ============================================================================
 exports.contagemPorEtapa = async (req, res) => {
   try {
-    const counts = await prisma.ci_onboarding.groupBy({
-      by: ['etapa'],
-      _count: { _all: true }
-    });
+    // Usar DISTINCT ON para pegar apenas o registro mais recente por aluno
+    const latestRecords = await prisma.$queryRaw`
+      SELECT DISTINCT ON (aluno_id) etapa
+      FROM lovable.ci_onboarding
+      ORDER BY aluno_id, data_mudanca DESC
+    `;
 
     const result = {};
     ETAPAS.forEach(e => { result[e] = 0; });
-    counts.forEach(c => { result[c.etapa] = c._count._all; });
+    latestRecords.forEach(r => {
+      if (result[r.etapa] !== undefined) {
+        result[r.etapa]++;
+      }
+    });
 
     res.json(result);
   } catch (error) {

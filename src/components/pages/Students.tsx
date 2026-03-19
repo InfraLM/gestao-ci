@@ -162,7 +162,6 @@ const Students: React.FC = () => {
         if (student) {
             setEditingStudent({
                 ...student,
-                valor_venda: parseFloat(student.valor_venda) || 0,
             });
         } else {
             setEditingStudent(null);
@@ -328,7 +327,7 @@ const Students: React.FC = () => {
                                         <tbody>
                                             {displayStudents.map((student: any) => {
                                                 const turmaInfo = student.aluno_turma?.[0]?.turma;
-                                                const turmaLabel = turmaInfo
+                                                const turmaLabel = turmaInfo && turmaInfo.id !== 'Sem Turma'
                                                     ? `${turmaInfo.tipo} | ${formatDateUTC(turmaInfo.data_evento_inicio)}${turmaInfo.data_evento_fim ? ` - ${formatDateUTC(turmaInfo.data_evento_fim)}` : ''}`
                                                     : '-';
                                                 const temPagamento = student.financeiro_aluno?.length > 0 && parseFloat(student.financeiro_aluno[0]?.valor_venda || '0') > 0;

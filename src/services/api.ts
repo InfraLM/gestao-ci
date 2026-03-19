@@ -393,6 +393,11 @@ export const onboardingAPI = {
     return safeFetch(url, { headers: getHeaders(), cache: 'no-store' });
   },
 
+  historico: (alunoId: string) => {
+    const url = addCacheBuster(`${API_BASE_URL}/onboarding/aluno/${alunoId}/historico`);
+    return safeFetch(url, { headers: getHeaders(), cache: 'no-store' });
+  },
+
   atualizar: (id: string, data: any) => safeFetch(`${API_BASE_URL}/onboarding/${id}`, {
     method: 'PUT',
     headers: getHeaders(),

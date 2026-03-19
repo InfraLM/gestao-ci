@@ -4,6 +4,7 @@ const { formatDecimal } = require('../utils/formatters');
 const { getBrazilDate } = require('../utils/dateBrazil');
 const { getNextId } = require('../utils/sequentialId');
 const { recalcTurmaStatus } = require('../utils/turmaStatus');
+const { SEM_TURMA_ID } = require('../utils/seedSemTurma');
 
 // ============================================================================
 // CRIAR ALUNO
@@ -37,7 +38,6 @@ exports.criarAluno = async (req, res) => {
         observacoes: observacoes || null,
         vendedor: vendedor || null,
         pos_graduacao: pos_graduacao || false,
-        valor_venda: formatDecimal(valor_venda || 0),
         data_cadastro: new Date(now),
         data_atualizacao: new Date(now),
       }
@@ -60,57 +60,68 @@ exports.criarAluno = async (req, res) => {
       console.error('[Alunos] Erro ao criar onboarding:', err.message);
     }
 
-    // Se tem turma, verificar capacidade e criar associacao + financeiro_aluno (receita)
+    // Determinar turma: real ou "Sem Turma"
+    const turmaEfetiva = turma_id || SEM_TURMA_ID;
+    let turmaWarning = null;
+
     if (turma_id) {
       try {
-        // Verificar capacidade da turma
+        // Verificar capacidade da turma real
         const turma = await prisma.ci_turmas.findUnique({ where: { id: turma_id } });
         const alunosCount = await prisma.ci_aluno_turma.count({ where: { turma_id } });
 
         if (!turma || alunosCount >= turma.capacidade) {
-          console.log('[Alunos] Turma lotada ou nao encontrada, aluno criado sem vinculo');
-          return res.status(201).json({ ...created, turma_warning: 'Turma lotada, aluno criado sem vinculo' });
+          console.log('[Alunos] Turma lotada ou nao encontrada, vinculando a "Sem Turma"');
+          turmaWarning = 'Turma lotada, aluno vinculado a "Sem Turma"';
+          // Cai no fluxo "Sem Turma" abaixo
         }
-
-        // Criar ci_aluno_turma com ID sequencial
-        const matriculaId = await getNextId('ci_aluno_turma', 'id_indice');
-        await prisma.ci_aluno_turma.create({
-          data: {
-            id_indice: matriculaId,
-            aluno_id: id,
-            turma_id: turma_id,
-            status: 'inscrito',
-            data_associacao: new Date(now),
-            data_atualizacao: new Date(now),
-          }
-        });
-        console.log('[Alunos] Associacao aluno-turma criada:', matriculaId);
-
-        // Criar ci_financeiro_aluno (receita) com ID sequencial
-        const finAlunoId = await getNextId('ci_financeiro_aluno', 'id');
-        await prisma.ci_financeiro_aluno.create({
-          data: {
-            id: finAlunoId,
-            aluno_id: id,
-            turma_id: turma_id,
-            valor_venda: formatDecimal(valor_venda || 0),
-            forma_pagamento: forma_pagamento || 'A VISTA',
-            parcelas: forma_pagamento === 'PARCELADO' ? (parseInt(parcelas) || 1) : 1,
-            data_matricula: new Date(now),
-            data_criacao: new Date(now),
-            data_atualizacao: new Date(now),
-          }
-        });
-        console.log('[Alunos] Financeiro-aluno (receita) criado:', finAlunoId);
-
-        // Recalcular status da turma com base na capacidade
-        await recalcTurmaStatus(turma_id);
       } catch (err) {
-        console.error('[Alunos] Erro ao criar matricula/financeiro:', err.message);
+        console.error('[Alunos] Erro ao verificar turma:', err.message);
       }
     }
 
-    res.status(201).json(created);
+    // Criar associacao e financeiro
+    const turmaFinal = turmaWarning ? SEM_TURMA_ID : turmaEfetiva;
+    try {
+      const matriculaId = await getNextId('ci_aluno_turma', 'id_indice');
+      await prisma.ci_aluno_turma.create({
+        data: {
+          id_indice: matriculaId,
+          aluno_id: id,
+          turma_id: turmaFinal,
+          status: 'inscrito',
+          data_associacao: new Date(now),
+          data_atualizacao: new Date(now),
+        }
+      });
+      console.log('[Alunos] Associacao aluno-turma criada:', matriculaId, '(turma:', turmaFinal, ')');
+
+      const finAlunoId = await getNextId('ci_financeiro_aluno', 'id');
+      await prisma.ci_financeiro_aluno.create({
+        data: {
+          id: finAlunoId,
+          aluno_id: id,
+          turma_id: turmaFinal,
+          valor_venda: formatDecimal(valor_venda || 0),
+          forma_pagamento: forma_pagamento || 'A VISTA',
+          parcelas: forma_pagamento === 'PARCELADO' ? (parseInt(parcelas) || 1) : 1,
+          data_matricula: new Date(now),
+          data_criacao: new Date(now),
+          data_atualizacao: new Date(now),
+        }
+      });
+      console.log('[Alunos] Financeiro-aluno criado:', finAlunoId);
+
+      // Recalcular status da turma (nao precisa para "Sem Turma")
+      if (turmaFinal !== SEM_TURMA_ID) {
+        await recalcTurmaStatus(turmaFinal);
+      }
+    } catch (err) {
+      console.error('[Alunos] Erro ao criar matricula/financeiro:', err.message);
+    }
+
+    const response = turmaWarning ? { ...created, turma_warning: turmaWarning } : created;
+    res.status(201).json(response);
   } catch (error) {
     console.error('[Alunos Create] Erro:', error.message);
     if (error.code === '23505' || error.code === 'P2002') {
@@ -196,13 +207,10 @@ exports.atualizarAluno = async (req, res) => {
     const { id } = req.params;
     const now = getBrazilDate();
 
-    const { turma_id, forma_pagamento, parcelas, ...bodyWithoutExtras } = req.body;
+    const { turma_id, forma_pagamento, parcelas, valor_venda, ...bodyWithoutExtras } = req.body;
     const updateData = { ...bodyWithoutExtras, data_atualizacao: new Date(now) };
     if (updateData.data_nascimento && typeof updateData.data_nascimento === 'string') {
       updateData.data_nascimento = new Date(updateData.data_nascimento + 'T00:00:00.000Z');
-    }
-    if (updateData.valor_venda !== undefined) {
-      updateData.valor_venda = formatDecimal(updateData.valor_venda || 0);
     }
 
     try {
@@ -210,9 +218,9 @@ exports.atualizarAluno = async (req, res) => {
       console.log('[Alunos] Aluno atualizado:', id);
 
       // Propagar valor_venda, forma_pagamento e parcelas para ci_financeiro_aluno
-      if (req.body.valor_venda !== undefined || forma_pagamento !== undefined || parcelas !== undefined) {
+      if (valor_venda !== undefined || forma_pagamento !== undefined || parcelas !== undefined) {
         const finData = { data_atualizacao: new Date(now) };
-        if (updateData.valor_venda !== undefined) finData.valor_venda = updateData.valor_venda;
+        if (valor_venda !== undefined) finData.valor_venda = formatDecimal(valor_venda || 0);
         if (forma_pagamento !== undefined) finData.forma_pagamento = forma_pagamento;
         if (parcelas !== undefined) finData.parcelas = forma_pagamento === 'PARCELADO' ? (parseInt(parcelas) || 1) : 1;
 

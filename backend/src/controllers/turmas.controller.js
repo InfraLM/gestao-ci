@@ -49,7 +49,7 @@ exports.listarTurmas = async (req, res) => {
   try {
     const { tipo, status, instrutor, page = 1, limit = 10 } = req.query;
 
-    const where = {};
+    const where = { id: { not: 'Sem Turma' } };
     if (tipo) where.tipo = { contains: tipo, mode: 'insensitive' };
     if (status) where.status = status;
     if (instrutor) where.instrutor = { contains: instrutor, mode: 'insensitive' };
@@ -152,14 +152,15 @@ exports.deletarTurma = async (req, res) => {
 // ============================================================================
 exports.estatisticasTurmas = async (req, res) => {
   try {
+    const excludeSemTurma = { id: { not: 'Sem Turma' } };
     const [total, emAberto, canceladas, lotadas, aconteceu, capacidadeAgg, totalAlunos] = await Promise.all([
-      prisma.ci_turmas.count(),
-      prisma.ci_turmas.count({ where: { status: 'EM ABERTO' } }),
-      prisma.ci_turmas.count({ where: { status: 'CANCELADA' } }),
-      prisma.ci_turmas.count({ where: { status: 'LOTADA' } }),
-      prisma.ci_turmas.count({ where: { status: 'ACONTECEU' } }),
-      prisma.ci_turmas.aggregate({ _sum: { capacidade: true } }),
-      prisma.ci_aluno_turma.count(),
+      prisma.ci_turmas.count({ where: excludeSemTurma }),
+      prisma.ci_turmas.count({ where: { ...excludeSemTurma, status: 'EM ABERTO' } }),
+      prisma.ci_turmas.count({ where: { ...excludeSemTurma, status: 'CANCELADA' } }),
+      prisma.ci_turmas.count({ where: { ...excludeSemTurma, status: 'LOTADA' } }),
+      prisma.ci_turmas.count({ where: { ...excludeSemTurma, status: 'ACONTECEU' } }),
+      prisma.ci_turmas.aggregate({ where: excludeSemTurma, _sum: { capacidade: true } }),
+      prisma.ci_aluno_turma.count({ where: { turma_id: { not: 'Sem Turma' } } }),
     ]);
 
     res.json({
@@ -183,6 +184,7 @@ exports.estatisticasTurmas = async (req, res) => {
 exports.turmasComResumo = async (req, res) => {
   try {
     const rows = await prisma.ci_turmas.findMany({
+      where: { id: { not: 'Sem Turma' } },
       orderBy: { data_evento_inicio: 'desc' },
       include: { _count: { select: { aluno_turma: true } } }
     });
@@ -243,7 +245,7 @@ exports.syncStatuses = async (req, res) => {
 exports.turmasAbertas = async (req, res) => {
   try {
     const rows = await prisma.ci_turmas.findMany({
-      where: { status: 'EM ABERTO' },
+      where: { status: 'EM ABERTO', id: { not: 'Sem Turma' } },
       orderBy: { data_evento_inicio: 'asc' },
       include: { _count: { select: { aluno_turma: true } } }
     });

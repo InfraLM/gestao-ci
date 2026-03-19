@@ -5,6 +5,7 @@ const onboardingController = require('../controllers/onboarding.controller');
 // Endpoints especificos ANTES dos parametrizados
 router.get('/stats/contagem', onboardingController.contagemPorEtapa);
 router.get('/aluno/:alunoId', onboardingController.obterPorAluno);
+router.get('/aluno/:alunoId/historico', onboardingController.historicoAluno);
 router.put('/avancar/:alunoId', onboardingController.avancarEtapa);
 
 // CRUD

@@ -11,7 +11,6 @@ export interface Student {
     data_cadastro?: string;
     status?: string;
     vendedor?: string;
-    valor_venda?: number;
     pos_graduacao?: boolean;
     aluno_turma?: any[];
     financeiro_aluno?: any[];

@@ -69,7 +69,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 endereco: student.endereco || '',
                 observacoes: student.observacoes || '',
                 pos_graduacao: student.pos_graduacao || false,
-                valor_venda: parseFloat(String(student.valor_venda)) || 0,
+                valor_venda: parseFloat(String((student as any).financeiro_aluno?.[0]?.valor_venda)) || 0,
                 vendedor: student.vendedor || user?.nome || '',
                 forma_pagamento: (student as any).financeiro_aluno?.[0]?.forma_pagamento || 'A VISTA',
                 parcelas: (student as any).financeiro_aluno?.[0]?.parcelas || 1,
@@ -80,7 +80,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 matriculasAPI.listar({ aluno_id: student.id }).then((result: any) => {
                     const matriculas = result?.data || result || [];
                     const ativa = Array.isArray(matriculas)
-                        ? matriculas.find((m: any) => m.status === 'inscrito')
+                        ? matriculas.find((m: any) => m.status === 'inscrito' && m.turma_id !== 'Sem Turma')
                         : null;
                     if (ativa) {
                         setCurrentTurmaId(ativa.turma_id);
@@ -124,13 +124,13 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 const response = await turmasAPI.listarComResumo();
                 const data = response?.data || response || [];
                 if (Array.isArray(data)) {
-                    setTurmas(data.filter((t: any) => t.status !== 'CANCELADA' && t.status !== 'ACONTECEU'));
+                    setTurmas(data.filter((t: any) => t.status !== 'CANCELADA' && t.status !== 'ACONTECEU' && t.id !== 'Sem Turma'));
                 }
             } else {
                 // Para novo aluno: so turmas abertas
                 const response = await turmasAPI.listarAbertas();
                 if (response && Array.isArray(response)) {
-                    setTurmas(response);
+                    setTurmas(response.filter((t: any) => t.id !== 'Sem Turma'));
                 }
             }
         } catch (err) {

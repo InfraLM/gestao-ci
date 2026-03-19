@@ -21,7 +21,6 @@ model ci_alunos {
   status           String?   @db.VarChar(50)
   observacoes      String?   @db.VarChar(1000)
   vendedor         String?   @db.VarChar(100)
-  valor_venda      Decimal?  @db.Decimal(10, 2)
   pos_graduacao    Boolean?  @default(false)
   data_cadastro    DateTime? @db.Date
   data_atualizacao DateTime? @db.Date
