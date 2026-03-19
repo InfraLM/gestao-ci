@@ -150,7 +150,7 @@ exports.listarAlunos = async (req, res) => {
             take: 1,
           },
           financeiro_aluno: {
-            select: { valor_venda: true },
+            select: { id: true, valor_venda: true, forma_pagamento: true, parcelas: true },
             take: 1,
           },
         },
@@ -196,8 +196,8 @@ exports.atualizarAluno = async (req, res) => {
     const { id } = req.params;
     const now = getBrazilDate();
 
-    const { turma_id, ...bodyWithoutTurma } = req.body;
-    const updateData = { ...bodyWithoutTurma, data_atualizacao: new Date(now) };
+    const { turma_id, forma_pagamento, parcelas, ...bodyWithoutExtras } = req.body;
+    const updateData = { ...bodyWithoutExtras, data_atualizacao: new Date(now) };
     if (updateData.data_nascimento && typeof updateData.data_nascimento === 'string') {
       updateData.data_nascimento = new Date(updateData.data_nascimento + 'T00:00:00.000Z');
     }
@@ -209,14 +209,16 @@ exports.atualizarAluno = async (req, res) => {
       const updated = await prisma.ci_alunos.update({ where: { id }, data: updateData });
       console.log('[Alunos] Aluno atualizado:', id);
 
-      // Propagar valor_venda para ci_financeiro_aluno
-      if (req.body.valor_venda !== undefined) {
+      // Propagar valor_venda, forma_pagamento e parcelas para ci_financeiro_aluno
+      if (req.body.valor_venda !== undefined || forma_pagamento !== undefined || parcelas !== undefined) {
+        const finData = { data_atualizacao: new Date(now) };
+        if (updateData.valor_venda !== undefined) finData.valor_venda = updateData.valor_venda;
+        if (forma_pagamento !== undefined) finData.forma_pagamento = forma_pagamento;
+        if (parcelas !== undefined) finData.parcelas = forma_pagamento === 'PARCELADO' ? (parseInt(parcelas) || 1) : 1;
+
         await prisma.ci_financeiro_aluno.updateMany({
           where: { aluno_id: id },
-          data: {
-            valor_venda: updateData.valor_venda,
-            data_atualizacao: new Date(now),
-          }
+          data: finData,
         });
       }
 

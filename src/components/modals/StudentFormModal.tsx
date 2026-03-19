@@ -71,8 +71,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 pos_graduacao: student.pos_graduacao || false,
                 valor_venda: parseFloat(String(student.valor_venda)) || 0,
                 vendedor: student.vendedor || user?.nome || '',
-                forma_pagamento: (student as any).forma_pagamento || 'A VISTA',
-                parcelas: (student as any).parcelas || 1,
+                forma_pagamento: (student as any).financeiro_aluno?.[0]?.forma_pagamento || 'A VISTA',
+                parcelas: (student as any).financeiro_aluno?.[0]?.parcelas || 1,
             });
 
             // Buscar turma atual do aluno
@@ -189,7 +189,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, st
                 nome: formData.nome,
                 cpf: formData.cpf || null,
                 email: formData.email || null,
-                telefone: formData.telefone || null,
+                telefone: formData.telefone?.replace(/\D/g, '') || null,
                 data_nascimento: formatDateForAPI(formData.data_nascimento),
                 status: formData.status,
                 endereco: formData.endereco || null,

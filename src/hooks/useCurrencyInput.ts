@@ -9,8 +9,11 @@ export const useCurrencyInput = (initialValue: number = 0) => {
   const [displayValue, setDisplayValue] = useState<string>(formatFromCents(Math.round(initialValue * 100)));
 
   useEffect(() => {
-    setValue(initialValue);
-    setDisplayValue(formatFromCents(Math.round(initialValue * 100)));
+    // Comparar com tolerância para evitar loops por arredondamento de float
+    if (Math.abs(initialValue - value) >= 0.005) {
+      setValue(initialValue);
+      setDisplayValue(formatFromCents(Math.round(initialValue * 100)));
+    }
   }, [initialValue]);
 
   function formatFromCents(cents: number): string {

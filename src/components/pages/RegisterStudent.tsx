@@ -90,7 +90,7 @@ const RegisterStudent: React.FC = () => {
         nome: formData.nome.trim(),
         cpf: formData.cpf.trim(),
         email: formData.email.trim(),
-        telefone: formData.telefone.trim(),
+        telefone: formData.telefone.replace(/\D/g, '') || '',
         data_nascimento: formatDateForAPI(formData.data_nascimento),
         status: 'Ativo',
         valor_venda: formData.valor_venda,

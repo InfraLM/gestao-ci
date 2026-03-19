@@ -20,13 +20,17 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   disabled = false,
   required = false
 }) => {
-  const { value: internalValue, handleChange } = usePhoneInput(value);
+  const { displayValue, rawValue, handleChange: hookHandleChange } = usePhoneInput(value);
 
+  const prevRawRef = React.useRef(rawValue);
+
+  // Emitir dígitos limpos para o pai, sem causar loop
   React.useEffect(() => {
-    if (internalValue !== value) {
-      onChange(internalValue);
+    if (rawValue !== prevRawRef.current) {
+      prevRawRef.current = rawValue;
+      onChange(rawValue);
     }
-  }, [internalValue]);
+  }, [rawValue, onChange]);
 
   return (
     <div className={className}>
@@ -38,8 +42,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       )}
       <input
         type="tel"
-        value={internalValue}
-        onChange={handleChange}
+        value={displayValue}
+        onChange={hookHandleChange}
         placeholder={placeholder}
         disabled={disabled}
         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-brand-teal focus:border-brand-teal disabled:bg-gray-100 disabled:cursor-not-allowed"

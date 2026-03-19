@@ -28,8 +28,8 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
 
   const prevInternalRef = React.useRef(internalValue);
   React.useEffect(() => {
-    // Notifica mudanças de valor para o componente pai apenas quando o valor interno realmente mudou
-    if (internalValue !== prevInternalRef.current) {
+    // Notifica mudanças apenas quando realmente houve diferença significativa (evita loops de float)
+    if (Math.abs(internalValue - prevInternalRef.current) >= 0.005) {
       prevInternalRef.current = internalValue;
       onChange(internalValue);
     }
