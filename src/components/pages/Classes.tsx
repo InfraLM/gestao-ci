@@ -42,6 +42,9 @@ const ClassCard: React.FC<{ classInfo: Class; onCardClick: () => void }> = ({ cl
             <div>
                 <h3 className="font-bold text-lg text-brand-dark">{classInfo.tipo}</h3>
                 <p className="text-sm text-gray-500 mt-1">{classInfo.data_display || 'Data não definida'}</p>
+                {classInfo.local_evento && (
+                    <p className="text-sm text-gray-500 mt-1">{classInfo.local_evento}</p>
+                )}
             </div>
             <div className="mt-4">
                 <div className="flex justify-between items-center text-sm text-gray-600">

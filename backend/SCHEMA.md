@@ -143,3 +143,10 @@ Gerado a partir de `backend/prisma/schema.prisma`. Todas as tabelas usam o schem
 | area         | VARCHAR | Nullable   |
 | ronda        | BOOLEAN | Nullable   |
 | reuniao      | BOOLEAN | Nullable   |
+
+
+ 1. npm install (raiz — instala react-router-dom, concurrently)
+     2. cd backend && npm install (instala express, prisma, cors, dotenv)
+     3. cd backend && npx prisma migrate dev --name init (cria banco SQLite e tabela User)
+     4. npm run dev:all — verificar que ambos servers iniciam
+     5. Testar proxy: frontend em 5173, backend em 3001, /api/examples funciona
