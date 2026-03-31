@@ -111,7 +111,7 @@ model ci_onboarding {
   id           String   @id @db.VarChar(255)
   aluno_id     String   @db.VarChar(255)
   etapa        String   @db.VarChar(100)
-  data_mudanca DateTime @db.Date
+  data_mudanca DateTime @db.Timestamp(6)
 
   aluno ci_alunos @relation(fields: [aluno_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
