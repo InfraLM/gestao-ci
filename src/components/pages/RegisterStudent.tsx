@@ -61,6 +61,8 @@ const RegisterStudent: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
+  const turmasDisponiveis = turmas.filter(t => (t.capacidade - (t.alunos_inscritos || 0)) > 0);
+
   const formatTurmaLabel = (turma: Turma): string => {
     const dataInicio = formatDateUTC(turma.data_evento_inicio);
     const dataFim = turma.data_evento_fim ? formatDateUTC(turma.data_evento_fim) : null;
@@ -237,7 +239,7 @@ const RegisterStudent: React.FC = () => {
               label="Turma *"
               value={formData.turma_id}
               onChange={(v) => setFormData(prev => ({ ...prev, turma_id: v }))}
-              options={turmas.map(t => ({
+              options={turmasDisponiveis.map(t => ({
                 value: t.id,
                 label: formatTurmaLabel(t),
               }))}

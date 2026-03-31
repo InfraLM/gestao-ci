@@ -28,7 +28,7 @@ exports.criarTurma = async (req, res) => {
         descricao: descricao || null,
         horario: horario || null,
         local_evento: local_evento || null,
-        capacidade: capacidade || null,
+        capacidade: capacidade != null ? parseInt(capacidade) : null,
         instrutor: instrutor || null,
         status: status || 'EM ABERTO',
       }
@@ -111,9 +111,33 @@ exports.atualizarTurma = async (req, res) => {
       updateData.data_evento_fim = toDateUTC(updateData.data_evento_fim);
     }
 
+    // Garantir que capacidade seja inteiro
+    if (updateData.capacidade != null) {
+      updateData.capacidade = parseInt(updateData.capacidade);
+      if (isNaN(updateData.capacidade) || updateData.capacidade < 0) {
+        return res.status(400).json({ error: 'Capacidade deve ser um numero valido >= 0' });
+      }
+
+      // Nao permitir reduzir abaixo do numero de alunos inscritos
+      const alunosCount = await prisma.ci_aluno_turma.count({ where: { turma_id: id } });
+      if (updateData.capacidade < alunosCount) {
+        return res.status(409).json({
+          error: `Nao e possivel reduzir a capacidade para ${updateData.capacidade}. Existem ${alunosCount} alunos matriculados.`,
+          alunosCount,
+          capacidade: updateData.capacidade
+        });
+      }
+    }
+
     try {
       const updated = await prisma.ci_turmas.update({ where: { id }, data: updateData });
       console.log('[Turmas] Turma atualizada:', id);
+
+      // Recalcular status apos atualizar capacidade
+      if (updateData.capacidade != null) {
+        await recalcAllTurmaStatuses();
+      }
+
       res.json(updated);
     } catch (err) {
       if (err.code === 'P2025') return res.status(404).json({ error: 'Turma nao encontrada' });

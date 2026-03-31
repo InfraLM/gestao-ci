@@ -62,18 +62,19 @@ exports.criarAluno = async (req, res) => {
 
     // Determinar turma: real ou "Sem Turma"
     const turmaEfetiva = turma_id || SEM_TURMA_ID;
-    let turmaWarning = null;
 
     if (turma_id) {
       try {
-        // Verificar capacidade da turma real
         const turma = await prisma.ci_turmas.findUnique({ where: { id: turma_id } });
+        if (!turma) {
+          return res.status(400).json({ error: 'Turma nao encontrada' });
+        }
         const alunosCount = await prisma.ci_aluno_turma.count({ where: { turma_id } });
-
-        if (!turma || alunosCount >= turma.capacidade) {
-          console.log('[Alunos] Turma lotada ou nao encontrada, vinculando a "Sem Turma"');
-          turmaWarning = 'Turma lotada, aluno vinculado a "Sem Turma"';
-          // Cai no fluxo "Sem Turma" abaixo
+        if (alunosCount >= turma.capacidade) {
+          return res.status(409).json({
+            error: `A turma esta cheia! (${alunosCount}/${turma.capacidade} vagas). Escolha outra turma.`,
+            full: true
+          });
         }
       } catch (err) {
         console.error('[Alunos] Erro ao verificar turma:', err.message);
@@ -81,7 +82,7 @@ exports.criarAluno = async (req, res) => {
     }
 
     // Criar associacao e financeiro
-    const turmaFinal = turmaWarning ? SEM_TURMA_ID : turmaEfetiva;
+    const turmaFinal = turmaEfetiva;
     try {
       const matriculaId = await getNextId('ci_aluno_turma', 'id_indice');
       await prisma.ci_aluno_turma.create({
@@ -120,8 +121,7 @@ exports.criarAluno = async (req, res) => {
       console.error('[Alunos] Erro ao criar matricula/financeiro:', err.message);
     }
 
-    const response = turmaWarning ? { ...created, turma_warning: turmaWarning } : created;
-    res.status(201).json(response);
+    res.status(201).json(created);
   } catch (error) {
     console.error('[Alunos Create] Erro:', error.message);
     if (error.code === '23505' || error.code === 'P2002') {

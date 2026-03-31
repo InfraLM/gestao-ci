@@ -119,6 +119,7 @@ const ClassDetailsModal: React.FC<ClassDetailsModalProps> = ({
     try {
       const dataToSubmit = {
         ...formData,
+        capacidade: parseInt(String(formData.capacidade)) || 0,
         data_evento_inicio: formatDateForAPI(formData.data_evento_inicio),
         data_evento_fim: formatDateForAPI(formData.data_evento_fim)
       };
@@ -127,8 +128,8 @@ const ClassDetailsModal: React.FC<ClassDetailsModalProps> = ({
       setEditing(false);
       onSuccess?.();
       await loadClassData();
-    } catch (error) {
-      console.error('Erro ao atualizar turma:', error);
+    } catch (error: any) {
+      alert(error?.message || 'Erro ao atualizar turma');
     }
   };
 
